@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Input Guide</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-root=".">
+<main class="wrap">
+  <div class="crumbs"><a href="index.html">Home</a> / Input Guide</div>
+  <h1>Input Guide</h1>
+  <p class="lede">What each calculator input means, where the value comes from, typical values and common mistakes. The <b>i</b> button next to an input on any calculator opens a short version of its entry here. In the sketches, the item you enter is drawn in <b style="color:var(--sight)">orange</b>.</p>
+  <div class="guide-tools no-print">
+    <label for="gq" class="sr">Filter</label>
+    <input id="gq" type="search" placeholder="Filter inputs, e.g. lane, offset, grade" autocomplete="off">
+    <span id="gcount" class="count"></span>
+  </div>
+  <div id="guide"></div>
+</main>
+<script src="data/sources.js"></script>
+<script src="js/common.js"></script>
+<script src="js/help.js"></script>
+<script src="help/defs-common.js"></script>
+<script src="help/defs-alignment.js"></script>
+<script src="help/defs-cross-section.js"></script>
+<script src="help/defs-intersections.js"></script>
+<script src="help/defs-roadside.js"></script>
+<script>
+(function () {
+  IDMUI.header("guide");
+  var H = IDMHelp;
+  H.renderGuide(document.getElementById("guide"));
+  IDMUI.footer([]);
+  document.title = "Input Guide | INDOT IDM Calculators";
+  var q = document.getElementById("gq"), cnt = document.getElementById("gcount");
+  function filter() {
+    var t = q.value.trim().toLowerCase(), shown = 0;
+    Array.prototype.forEach.call(document.querySelectorAll(".guide-item"), function (a) {
+      var ok = !t || a.textContent.toLowerCase().indexOf(t) >= 0;
+      a.hidden = !ok; if (ok) shown++;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".guide-g"), function (h) {
+      var n = h.nextElementSibling, any = false;
+      while (n && !n.classList.contains("guide-g")) { if (!n.hidden) any = true; n = n.nextElementSibling; }
+      h.hidden = !any;
+    });
+    document.querySelector(".guide-toc").hidden = !!t;
+    cnt.textContent = t ? shown + " of " + H.order.length + " inputs" : H.order.length + " inputs";
+  }
+  q.addEventListener("input", filter);
+  filter();
+})();
+</script>
+</body>
+</html>

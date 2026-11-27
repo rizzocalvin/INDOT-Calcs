@@ -30,6 +30,8 @@ Each calculator page has:
 - an inline SVG diagram that redraws as inputs change;
 - a verification note and the revision of each IDM chapter used.
 
+Every input has an **i** button that opens a short explanation with a sketch of where the value comes from. The **Input Guide** (`guide.html`) lists every input with its IDM reference, typical values and common mistakes.
+
 Inputs are saved in the URL hash, so a calculation can be bookmarked or shared. Pages print cleanly, and work on phones and in light or dark themes.
 
 ## IDM edition and chapter versions used
@@ -60,10 +62,20 @@ index.html                 home page
 css/style.css              shared styles (light/dark, mobile, print)
 js/common.js               page chrome, navigation, input binding, SVG helpers
 js/calcs.js                pure calculation functions (browser and Node)
+js/help.js                 input help: (i) buttons, popup, sketch toolkit, Input Guide renderer
+help/defs-*.js             input help text and sketches (common + one file per section)
+guide.html                 Input Guide: every input with sketch, IDM reference, typical values
 data/*.js                  IDM design tables, one file per topic, tagged by chapter/section/figure
 alignment/ cross-section/ intersections/ roadside/   section index pages and calculators
 tests/spot-checks.js       checks against IDM worked examples and tables
+tests/help-check.js        every input has a help entry; every sketch builds
 ```
+
+## Input help
+
+The help text lives in `help/defs-common.js` (inputs shared by several pages, such as design speed and lane width) and one `help/defs-<section>.js` file per section. Each file calls `IDMHelp.define(key, {...})` once per input concept and `IDMHelp.pages("<section>/<page>.html", { inputId: key })` to map each input on a page to its entry. The fields and the sketch toolkit are documented at the top of `js/help.js`. In the sketches, orange marks the value the user enters.
+
+When you add an input to a page, add it to that page's map (and a definition if it is new), then run `node tests/help-check.js`. The check fails if any input or dropdown on a calculator page has no help entry.
 
 ## Data files and how to update them
 
@@ -128,10 +140,19 @@ These are kept as printed in the data, and the affected pages flag them:
 - **Figure 46-7A vs Figure 502-2J:** lane-drop taper rates differ at some speeds (e.g., 55 mph: 60:1 vs 55:1).
 - **Storage figures:** the page captioned "Figure 46-4K(1)" in the PDF contains the adjustment-factor table, and the storage chart is on the preceding page.
 - **Chapters 53 to 56:** transcription notes cover typos and inconsistencies. Examples: overlapping speed conditions in 53-4 and 55-3C/D footnote 4, the AADT gap at exactly 2000 in 53-3, decision sight distance and ISD values that differ between figures, and mislabeled footnotes. They are stored in each figure's `transcriptionNotes` and shown on the Lane & Shoulder Widths page.
+- **Found while writing the input help** (noted in the Input Guide entries where they matter):
+  - Section 305-3.03 says Rmin comes from "Equation 305-2.1"; the equation is 305-3.1.
+  - Figures 44-3E and 44-3F call the same quantity M "External Distance" and "Mid-ordinate".
+  - Section 46-7.0 says DE is acceleration to 5 mph below the average running speed; Figure 46-7A note 1 says 6 mph (the calculator follows the figure).
+  - Section 46-4.02(02) uses "exceeds 10%" trucks in item 4 and "10% or more" in item 5.
+  - Figure 45-3C notes refer to Section 45-8.0, which does not exist. Section 45-3.02(02) says a rock-cut backslope "should not exceed 1:6".
+  - Figure 53-1 footnote 5: item 5a sets left-shoulder usable width equal to paved width; item 5c says paved plus 1 ft for 4 ft or wider.
+  - Slope averaging starts at the edge of the shoulder in 49-2.01 item 2 and at the edge of the travel lane in 49-2.02(02); Figure 49-2E prints "12(-0.4)" for 12(-0.04). Example 49-2.2 reads 35 ft where Figure 49-2A gives 30 to 34 ft.
+  - Section 49-4.02(04) calls Figure 49-4K "Support Protection"; the figure's title is "Pier Protection".
 
 ## Not sourced from the current IDM
 
-- **Curve widening:** the IDM refers to the Green Book (Section 3.3.10) for calculated traveled-way widening and does not reproduce the equations or design-vehicle dimensions. The page implements the Green Book equations, with lateral clearance C = 2.0/2.5/3.0 ft for 20/22/24-ft roadways. Its vehicle inputs are illustrative placeholders that the user must replace. Verify against the Green Book.
+- **Curve widening:** the IDM refers to the Green Book (Section 3.3.10) for calculated traveled-way widening and does not reproduce the equations. The page implements the Green Book equations, with lateral clearance C = 2.0/2.5/3.0 ft for 20/22/24-ft roadways. Its vehicle defaults are the WB-65 dimensions from IDM Figure 40-4A (the IDM says the Indiana Design Vehicle is equivalent to the WB-65). Track width u is not in the IDM; the default uses the 8.5-ft overall width. Verify against the Green Book.
 - **Storage chart:** the signalized storage-length chart (the graph labeled Figure 46-4K in the PDF) is a graph and was not digitized. The page accepts a value read from it and applies the tabulated adjustment factor.
 - **Not tabulated by the IDM:**
   - Kcz for design speeds below 40 mph: the 40 mph column is used and flagged.
@@ -140,3 +161,4 @@ These are kept as printed in the data, and the affected pages flag them:
   - Figure 49-4E runout lengths at 35 and 65 mph: interpolated, as the IDM does in Example 49-4.1.
 - **Truck right turns from a stop:** the IDM tabulates passenger cars only. The page uses the Figure 46-10H(1) crossing gaps for trucks turning right.
 - **Not covered:** unsymmetrical vertical curves (Figure 44-3H), the outside-of-curve graphical length-of-need method (Figure 49-4H), the barrier-warrant embankment charts (Figures 49-3B/3C), and the divided-highway trailing-end layout (Figure 49-4J). The pages point to the figures.
+- **Input help entries marked "Not defined by the IDM":** curve-widening track width, wheelbases, front overhang and front-overhang wheelbase (Green Book method), and the turn-lane truck length for storage (the IDM asks for room for one truck but gives no length; Figure 40-4A lengths are quoted).

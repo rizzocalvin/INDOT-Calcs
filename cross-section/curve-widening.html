@@ -20,12 +20,12 @@
         <div class="field"><label for="Wn">Traveled-way width on tangent, Wn (ft)</label><select id="Wn"><option>20</option><option>22</option><option selected>24</option></select></div>
         <div class="field"><label for="N">Number of lanes, N</label><input id="N" type="number" value="2" min="1"></div>
       </fieldset>
-      <fieldset><legend>Design vehicle (enter from the Green Book)</legend>
-        <div class="field wide"><div class="msg warn" style="margin:0">The IDM does not tabulate design-vehicle dimensions for widening. The defaults below are <b>illustrative placeholders only</b>; replace them with your design vehicle's dimensions from the AASHTO Green Book.</div></div>
+      <fieldset><legend>Design vehicle (Figure 40-4A)</legend>
+        <div class="field wide"><div class="msg warn" style="margin:0">Defaults are the <b>WB-65</b>, which the IDM says is equivalent to the Indiana Design Vehicle (Figure 40-4A): WB1 = 21.6 ft, WB2 = 43.4 ft, front overhang 4.0 ft. Figure 40-4A gives overall width (8.5 ft), not track width; the track width default uses that width. Check the vehicle for your facility (40-4.0) and the track width against the Green Book.</div></div>
         <div class="field"><label for="u">Track width on tangent, u (ft)</label><input id="u" type="number" step="0.1" value="8.5"></div>
-        <div class="field"><label for="wb">Wheelbases Li (ft)<small>Comma-separated, e.g. tractor, trailer</small></label><input id="wb" type="text" value="20, 40"></div>
-        <div class="field"><label for="A">Front overhang, A (ft)</label><input id="A" type="number" step="0.1" value="4"></div>
-        <div class="field"><label for="Lf">Wheelbase for front overhang term, L (ft)<small>Single unit or tractor</small></label><input id="Lf" type="number" step="0.1" value="20"></div>
+        <div class="field"><label for="wb">Wheelbases Li (ft)<small>Comma-separated WB1, WB2 (Figure 40-4A)</small></label><input id="wb" type="text" value="21.6, 43.4"></div>
+        <div class="field"><label for="A">Front overhang, A (ft)</label><input id="A" type="number" step="0.1" value="4.0"></div>
+        <div class="field"><label for="Lf">Wheelbase for front overhang term, L (ft)<small>Single unit or tractor</small></label><input id="Lf" type="number" step="0.1" value="21.6"></div>
       </fieldset>
       <fieldset><legend>Existing shoulders (optional)</legend>
         <div class="field"><label for="fds">Full-depth shoulder width provided, each side (ft)</label><input id="fds" type="number" step="0.5" placeholder="e.g. 4"></div>
@@ -57,6 +57,9 @@
 <script src="../data/sources.js"></script>
 <script src="../data/cross-section.js"></script>
 <script src="../js/calcs.js"></script>
+<script src="../js/help.js"></script>
+<script src="../help/defs-common.js"></script>
+<script src="../help/defs-cross-section.js"></script>
 <script src="../js/common.js"></script>
 <script>
 (function () {

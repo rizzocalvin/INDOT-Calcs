@@ -71,7 +71,7 @@
     h.className = "site-header";
     h.innerHTML = '<div class="wrap"><a class="brand" href="' + r + '/index.html"><span class="logo">IDM</span>' +
       '<span>INDOT IDM Roadway Calculators<small>Based on the Indiana Design Manual</small></span></a>' +
-      '<nav class="nav" aria-label="Sections">' + nav + "</nav>" +
+      '<nav class="nav" aria-label="Sections">' + nav + '<a href="' + r + '/guide.html"' + (activeSection === "guide" ? ' class="active"' : "") + '>Input Guide</a></nav>' +
       '<button class="theme-btn" type="button" title="Toggle light/dark theme">Theme</button></div>';
     document.body.insertBefore(h, document.body.firstChild);
     h.querySelector(".theme-btn").addEventListener("click", function () {
@@ -141,6 +141,7 @@
       main.insertBefore(p, main.firstChild);
     }
     UI.footer(cfg.chapters);
+    if (window.IDMHelp) IDMHelp.attach();
     document.title = cfg.title + " | INDOT IDM Calculators";
   };
 
@@ -174,6 +175,7 @@
 
   // Save inputs in the URL hash so a calculation can be bookmarked or shared
   UI.bind = function (fn) {
+    if (window.IDMHelp) IDMHelp.attach();
     var inputs = document.querySelectorAll(".inputs input, .inputs select");
     var restore = {};
     try {
