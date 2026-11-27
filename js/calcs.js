@@ -172,6 +172,7 @@
     var arr = stateSystem ? t.stateSystem : t.offSystemOrRestricted;
     var i = t.lanes.indexOf(n1);
     if (i >= 0) return arr[i];
+    if (n1 > t.lanes[t.lanes.length - 1]) return arr[arr.length - 1]; // beyond Figure 305-4F: use the last tabulated factor
     return C.interp(n1, t.lanes, arr);
   };
   // Equation 305-4.1. w in ft (min 12), e in %, G in %
