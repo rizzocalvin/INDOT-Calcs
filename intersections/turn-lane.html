@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turn-Lane Length</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Turn-Lane Length: Taper, Deceleration &amp; Storage</h1>
+  <p class="lede">Builds the functional length of a left- or right-turn lane from the IDM taper length, deceleration distance adjusted for grade (Figure 46-4J), and storage length for signalized or unsignalized control (Section 46-4.02(02), Figures 46-4H, 46-4K and 46-4L).</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Facility</legend>
+        <div class="field"><label for="cls">Mainline classification<small>Figure 46-4H</small></label>
+          <select id="cls"><option value="ra" selected>Rural arterial</option><option value="ua">Urban arterial</option><option value="oth">Other facility</option><option value="stop">Stop or T facility</option></select></div>
+        <div class="field"><label for="V">Design speed</label><select id="V"></select></div>
+        <div class="field"><label for="gr">Grade approaching the turn lane (%)<small>− downgrade, + upgrade</small></label><input id="gr" type="number" step="0.5" value="0"></div>
+        <div class="field"><label for="free">Approach is free-flowing?<small>LD applies only to free-flowing legs (Fig. 46-4H note 2)</small></label><select id="free"><option value="yes" selected>Yes (free-flowing leg / signalized)</option><option value="no">No (stop-controlled approach)</option></select></div>
+        <div class="field"><label for="restr">Restricted urban: decelerate in through lane (LD = 0)?</label><select id="restr"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+        <div class="field"><label for="dual">Turn lanes</label><select id="dual"><option value="single" selected>Single</option><option value="dual">Dual (urban street)</option></select></div>
+        <div class="field"><label for="curv">Curvilinear approach?<small>Taper may be designed to the curve, min. 50 ft</small></label><select id="curv"><option value="no" selected>No (tangent)</option><option value="yes">Yes</option></select></div>
+      </fieldset>
+      <fieldset><legend>Storage</legend>
+        <div class="field"><label for="ctrl">Intersection control</label><select id="ctrl"><option value="sig" selected>Signalized</option><option value="uns">Unsignalized</option></select></div>
+        <div class="field"><label for="vol">Turning volume, design hour (vph)</label><input id="vol" type="number" step="5" value="150"></div>
+        <div class="field"><label for="cyc">Cycle length (s)<small>Signalized</small></label><input id="cyc" type="number" step="5" value="90"></div>
+        <div class="field"><label for="tr">Trucks (%)</label><input id="tr" type="number" step="1" value="5"></div>
+        <div class="field"><label for="tl">Truck length for storage (ft)<small>Unsignalized, trucks &gt; 10%; your value</small></label><input id="tl" type="number" step="5" value="65"></div>
+        <div class="field"><label for="vc">v/c ratio (optional)<small>Fig. 46-4K adjustment factor</small></label><input id="vc" type="number" step="0.05" placeholder="e.g. 0.85"></div>
+        <div class="field"><label for="ls75">Storage from Fig. 46-4K(1) chart (ft)<small>Optional: read at C = 75 s, v/c = 0.80</small></label><input id="ls75" type="number" step="5" placeholder="optional"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Turn-lane layout</h2>
+    <svg id="dia" aria-label="Turn lane layout"></svg>
+    <div class="cap">Plan view drawn to horizontal scale (Figure 46-4I). LT = taper, LD = deceleration, LS = storage.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <ul>
+      <li><b>Functional length (Figure 46-4H):</b> rural arterial LT + LD + LS; urban arterial, other facility, and stop or T facility LT + LD + LS desirable, LT + LS minimum. LD is a consideration only at a free-flowing leg of a stop-controlled or signalized intersection, or a free-flowing turning roadway with a turn lane.</li>
+      <li><b>Taper (46-4.02(02) item 1):</b> 100-ft straight-line taper for a single turn lane; 150 ft for dual turn lanes on an urban street. On a curvilinear alignment design the taper with a constant rate of divergence, at least 50 ft.</li>
+      <li><b>Deceleration (item 2, Figure 46-4J, Rev. Aug. 2018):</b> required on rural facilities, desirable on urban facilities. Multiply LD by the grade-adjustment factor (downgrade 1.00 to 1.35; upgrade 1.00 to 0.80). Under restricted urban conditions deceleration may occur in the travel lane (LD = 0). Figure 46-4J covers 25 to 60 mph.</li>
+      <li><b>Signalized storage (item 3):</b> 2.0 times the average vehicles arriving per cycle for cycles under 120 s, 1.5 times for 120 s or longer, at 20 ft per vehicle; at least two passenger cars. Alternatively use the Figure 46-4K(1) chart (C = 75 s, v/c = 0.80) times the Figure 46-4K adjustment factor. Turn-on-red or a separate right-turn phase may allow a shorter right-turn lane.</li>
+      <li><b>Unsignalized storage (item 4, Figure 46-4L):</b> enough for the turning vehicles arriving in an average 2-minute period in the design hour; at least two passenger cars, or one car and one truck if trucks exceed 10%.</li>
+      <li><b>Minimum length (item 5):</b> under restricted conditions, the full-width lane (deceleration plus storage) may be 50 ft with fewer than 10% trucks, or 100 ft with 10% or more, excluding the taper. At signals the turn lane should exceed the queue in the adjacent through lane.</li>
+      <li>The storage-length chart in the IDM is a graph and is not digitized here; enter a value read from it if you use that method. In the PDF the adjustment-factor table carries the caption "Figure 46-4K(1)".</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/intersections.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "intersections", title: "Turn-Lane Length", chapters: ["46"] });
+  U.speedOptions("V", [25, 30, 35, 40, 45, 50, 55, 60], 50);
+
+  function compute() {
+    var cls = U.str("cls"), V = U.num("V"), gr = U.num("gr") || 0, free = U.str("free") === "yes", restr = U.str("restr") === "yes";
+    var dual = U.str("dual") === "dual", curv = U.str("curv") === "yes", ctrl = U.str("ctrl"), vol = U.num("vol"), cyc = U.num("cyc"), tr = U.num("tr") || 0, tl = U.num("tl"), vc = U.num("vc"), ls75 = U.num("ls75");
+    var T = IDM.int.taper, out = "", rows = [];
+    var LT = dual ? T.dualUrban : T.single;
+    rows.push(["Taper, LT", LT + " ft" + (curv ? " (min. " + T.minCurvilinear + " ft on a curve)" : ""), dual ? "150 ft for dual turn lanes, urban street" : "100-ft straight-line taper"]);
+    var dec = C.decelLength(V, gr), LD = 0, ldNote = "";
+    if (!free) { LD = 0; ldNote = "Not a free-flowing leg: LD not considered (Figure 46-4H note 2)"; }
+    else if (restr && cls !== "ra") { LD = 0; ldNote = "Restricted urban: deceleration within the travel lane (item 2)"; }
+    else { LD = dec.length; ldNote = "Figure 46-4J: " + dec.base + " ft × grade factor " + dec.factor.toFixed(2); }
+    if (restr && cls === "ra") out += U.msg("warn", "Rural facilities should meet Figure 46-4J; the LD = 0 option applies only to restricted urban conditions.");
+    if (dec.outOfRange) out += U.msg("warn", "Grade exceeds the 6% range of the Figure 46-4J adjustment factors; the 5–6% factor is used.");
+    rows.push(["Deceleration, LD", U.fmt(LD, 0) + " ft", ldNote]);
+
+    var LS, lsNote;
+    if (ctrl === "sig") {
+      var s = C.storageSignal(vol, cyc);
+      LS = s.length;
+      lsNote = U.fmt(s.factor, 1) + " × " + U.fmt(s.perCycle, 2) + " veh/cycle × 20 ft = " + U.fmt(s.raw, 1) + " ft (min. " + s.min + " ft)";
+      if (isFinite(vc) && isFinite(cyc)) {
+        var f = C.storageAdjFactor(vc, cyc);
+        if (isFinite(f)) {
+          var msg = "Figure 46-4K adjustment factor for v/c = " + vc + ", C = " + cyc + " s: " + f.toFixed(2) + (isFinite(ls75) ? " → chart storage " + ls75 + " × " + f.toFixed(2) + " = " + U.fmt(ls75 * f, 0) + " ft." : ". Multiply the storage read from the Figure 46-4K(1) chart by this factor.");
+          out += U.msg("info", msg);
+        } else out += U.msg("warn", "v/c or cycle length is outside the Figure 46-4K table (v/c 0.50–0.95, C 60–100 s).");
+      }
+    } else {
+      var u = C.storageUnsignal(vol, tr, tl);
+      LS = u.length;
+      lsNote = U.fmt(u.arrivals, 2) + " veh in 2 min × 20 ft = " + U.fmt(u.raw, 1) + " ft (min. " + u.min + " ft" + (tr > 10 ? ", 1 car + 1 truck" : ", 2 cars") + ")";
+      if (u.figure) out += U.msg("info", "Figure 46-4L recommends LS = " + u.figure.text + " ft for a turning DHV of " + vol + " vph.");
+      if (u.figure && u.figure.ls > LS) { LS = u.figure.ls; lsNote += "; Figure 46-4L value governs"; }
+    }
+    rows.push(["Storage, LS", U.fmt(LS, 0) + " ft", lsNote]);
+    var full = LD + LS, total = LT + full, totalMin = LT + LS;
+    var desIncl = cls === "ra" || free;
+    rows.push(["Full-width length, LD + LS", U.fmt(full, 0) + " ft", ""]);
+    rows.push(["Functional length, LT + LD + LS", U.fmt(total, 0) + " ft", cls === "ra" ? "Rural arterial (Figure 46-4H)" : "Desirable (Figure 46-4H)", "gov"]);
+    if (cls !== "ra") rows.push(["Minimum functional length, LT + LS", U.fmt(totalMin, 0) + " ft", "Figure 46-4H minimum"]);
+    out = U.stats([["Taper", LT, "ft"], ["Decel.", U.fmt(LD, 0), "ft"], ["Storage", U.fmt(LS, 0), "ft"], ["Total", U.fmt(total, 0), "ft"]]) + U.kv(rows) + out;
+    var rmin = tr >= 10 ? IDM.int.storage.minRestricted.tenPctTrucks : IDM.int.storage.minRestricted.underTenPctTrucks;
+    out += U.msg("info", "Restricted conditions: the full-width lane (excluding taper) may be as short as " + rmin + " ft with " + (tr >= 10 ? "10% or more" : "fewer than 10%") + " trucks (46-4.02(02) item 5).");
+    if (ctrl === "sig") out += U.msg("info", "At a signal the turn lane should exceed the storage length of the adjacent through-lane queue.");
+    U.$("results").innerHTML = out;
+    draw(LT, LD, LS);
+  }
+
+  function draw(LT, LD, LS) {
+    var W = 900, H = 220, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var total = LT + LD + LS, x0 = 40, x1 = W - 80, sc = (x1 - x0) / Math.max(total, 1);
+    var y = 70, lw = 30;
+    U.el(svg, "rect", { x: 0, y: y - lw, width: W, height: lw * 2, fill: "var(--road)" });
+    U.line(svg, 0, y, W, y, "var(--mark)", 2, "18 12");
+    // turn lane below through lane
+    var xt = x0, xd = x0 + LT * sc, xs = xd + LD * sc, xe = xs + LS * sc;
+    U.el(svg, "polygon", { points: [xt, y + lw, xd, y + lw + lw, xe, y + lw + lw, xe, y + lw].join(" "), fill: "var(--accent)", opacity: 0.55 });
+    U.line(svg, xe, y - lw, xe, y + 2 * lw, "var(--ink)", 3);
+    U.text(svg, xe + 6, y + 2 * lw - 4, "Stop line", { size: 12 });
+    for (var k = 0; k < Math.min(12, Math.floor(LS / 20)); k++) {
+      U.el(svg, "rect", { x: xe - (k + 1) * 20 * sc + 2, y: y + lw + 8, width: Math.max(16 * sc, 3), height: 14, rx: 2, fill: "var(--warn)" });
+    }
+    [[xt, xd, "LT = " + LT + " ft"], [xd, xs, "LD = " + Math.round(LD) + " ft"], [xs, xe, "LS = " + Math.round(LS) + " ft"]].forEach(function (s, i) {
+      if (s[1] - s[0] < 2) return;
+      U.dim(svg, s[0], H - 40 + (i % 2) * 0, s[1], H - 40, s[2], { dy: i % 2 ? 22 : -6 });
+      U.line(svg, s[0], y + 2 * lw, s[0], H - 30, "var(--ink-3)", 1, "3 3");
+    });
+    U.text(svg, x0, 24, "Through traffic →", { size: 12 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

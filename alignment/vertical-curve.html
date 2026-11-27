@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vertical Curves</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Vertical Curves</h1>
+  <p class="lede">Determines the required K value and minimum length of a crest or sag vertical curve, checks a proposed length, and computes PVC, PVI and PVT stations and elevations, the high or low point, and elevations along the curve (Figures 44-3A through 44-3F).</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Grades and PVI</legend>
+        <div class="field"><label for="g1">Grade in, G1 (%)</label><input id="g1" type="number" step="0.01" value="-1.75"></div>
+        <div class="field"><label for="g2">Grade out, G2 (%)</label><input id="g2" type="number" step="0.01" value="2.25"></div>
+        <div class="field"><label for="pvi">PVI station</label><input id="pvi" type="text" value="13+80"></div>
+        <div class="field"><label for="pvie">PVI elevation (ft)</label><input id="pvie" type="number" step="0.01" value="577.50"></div>
+        <div class="field"><label for="L">Proposed curve length, L (ft)<small>Blank = use the governing minimum</small></label><input id="L" type="number" step="10" value="500"></div>
+      </fieldset>
+      <fieldset><legend>Criteria</legend>
+        <div class="field"><label for="V">Design speed, V</label><select id="V"></select></div>
+        <div class="field"><label for="crit">Sight distance criterion</label>
+          <select id="crit">
+            <option value="min" selected>SSD, minimum K (Fig. 44-3A / 44-3C)</option>
+            <option value="des">SSD, desirable K (crest, Fig. 44-3A)</option>
+            <option value="A">DSD maneuver A (Fig. 44-3B / 44-3D)</option>
+            <option value="B">DSD maneuver B</option>
+            <option value="C">DSD maneuver C</option>
+            <option value="D">DSD maneuver D</option>
+            <option value="E">DSD maneuver E</option>
+          </select></div>
+        <div class="field"><label for="curb">Curbed section or concrete barrier?<small>Drainage check, 44-3.01(03), 44-3.02(03)</small></label>
+          <select id="curb"><option value="no">No (uncurbed)</option><option value="yes">Yes</option></select></div>
+        <div class="field"><label for="inc">Station table interval (ft)</label><input id="inc" type="number" step="5" value="50"></div>
+      </fieldset>
+      <fieldset><legend>Curve through a fixed point (optional, Figure 44-3 I)</legend>
+        <div class="field"><label for="psta">Point P station</label><input id="psta" type="text" placeholder="e.g. 47+36"></div>
+        <div class="field"><label for="pel">Required elevation at P (ft)</label><input id="pel" type="number" step="0.01" placeholder="e.g. 648.50"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Profile</h2>
+    <svg id="dia" aria-label="Vertical curve profile"></svg>
+    <div class="cap">Profile view; vertical scale exaggerated. Dashed lines are the tangent grades.</div>
+  </section>
+
+  <section class="card">
+    <h2>Elevations along the curve</h2>
+    <div id="stations"></div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>Crest curves (44-3.01)</h3>
+    <div class="eq">S &lt; L: L = A S² / 2158 = K A &nbsp; (Eqs. 44-3.1, 44-3.2) &nbsp;&nbsp; S ≥ L: L = 2S − 2158 / A &nbsp; (Eq. 44-3.3)</div>
+    <p>Eye height 3.5 ft, object height 2 ft. Figure 44-3A gives a minimum K (from the Figure 42-1A SSD) and a desirable K (from the SSD of the next higher speed). The truck K need not be checked. Minimum crest length is 3V ft unless existing conditions make it impractical.</p>
+    <h3>Sag curves (44-3.02)</h3>
+    <div class="eq">S &lt; L: L = A S² / (400 + 3.5 S) &nbsp; (Eq. 44-3.4) &nbsp;&nbsp; S ≥ L: L = 2S − (400 + 3.5 S) / A &nbsp; (Eq. 44-3.5)</div>
+    <p>Headlight height 2 ft with a 1° upward divergence. The IDM text prints "400 + 5.3 S"; the K values in Figure 44-3C are computed with 400 + 3.5 S, which this page uses. Minimum sag length is 3.2V ft. Figure 44-3C has no 15 mph row.</p>
+    <h3>When S ≥ L</h3>
+    <p>Where the stopping sight distance is greater than or equal to the curve length, a K value at or above the required value satisfies the criterion without the equation or graphical check (44-3.01(01) item 1). If the SSD provided exceeds that required even though K is below the table value, the K value becomes a Level Three rather than Level One design-exception item.</p>
+    <h3>Decision sight distance</h3>
+    <p>Figures 44-3B and 44-3D tabulate K for DSD from 20 to 65 mph. Their DSD values for 20 and 25 mph are not in Figure 42-2A, and Figure 44-3D states K = DSD²/(120 + 3.5 S); this page reports the K values exactly as printed.</p>
+    <h3>Drainage</h3>
+    <p>Curbed sections or concrete barrier: K ≤ 167 gives at least 0.3% grade about 50 ft from the high or low point; where K &gt; 167, evaluate drainage near the apex or low point (flanking inlets in sags). Uncurbed: K ≤ 300 gives 0.15% at 50 ft. Avoid sag low points within the bridge shadow; desirably about 100 ft from the bridge (44-5.03(06)).</p>
+    <h3>Geometry (Figure 44-3F)</h3>
+    <div class="eq">PVC elev = PVI elev − G1 L/200 &nbsp; y(x) = PVC elev + G1 x/100 + (G2 − G1) x² / (200 L) &nbsp; x_T = −G1 L / (G2 − G1) &nbsp; M = (G2 − G1) L / 800</div>
+    <p>IDM Example 44-3.1 (Figure 44-3G) uses these inputs. The page reproduces its PVC/PVT stations and low-point station (13+48.75). The example's printed low-point elevation (580.33) and its offset table contain arithmetic errors; the correct elevation from the Figure 44-3F equations is 579.96. Example 44-3.2 (Figure 44-3J) can be checked with G1 = −1.5, G2 = +2.0, PVI 49+10 at 642.10, P = 47+36 at 648.50: L = 1480.5 ft.</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/sight-distance.js"></script>
+<script src="../data/vertical.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "alignment", title: "Vertical Curves", chapters: ["44", "42"] });
+  U.speedOptions("V", [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70], 55);
+
+  function compute() {
+    var g1 = U.num("g1"), g2 = U.num("g2"), pvi = C.parseStation(U.str("pvi")), pvie = U.num("pvie"), Lin = U.num("L");
+    var V = U.num("V"), crit = U.str("crit"), curb = U.str("curb") === "yes", inc = U.num("inc");
+    var A = g2 - g1, type = A < 0 ? "crest" : "sag", Aabs = Math.abs(A), out = "";
+    if (!isFinite(g1) || !isFinite(g2) || A === 0) { U.$("results").innerHTML = U.msg("warn", "Enter two different grades."); return; }
+
+    // required K
+    var K = null, S = null, kSrc = "", sSrc = "";
+    if (crit === "min" || crit === "des") {
+      if (type === "crest") {
+        var ck = C.crestK(V);
+        K = crit === "des" ? ck.kDes : ck.kMin; S = crit === "des" ? ck.ssdDes : ck.ssdMin;
+        kSrc = "Figure 44-3A (" + (crit === "des" ? "desirable" : "minimum") + ")"; sSrc = crit === "des" ? "SSD of V + 5 mph, Figure 44-3A" : "Figure 42-1A";
+      } else {
+        var sk = C.sagK(V);
+        if (sk) { K = sk.k; S = sk.ssd; kSrc = "Figure 44-3C"; sSrc = "Figure 42-1A"; }
+        if (crit === "des") out += U.msg("info", "Figure 44-3C gives a single K for sag curves; the desirable option applies to crest curves only.");
+      }
+    } else {
+      var dk = C.dsdK(type, V, crit);
+      if (dk) { K = dk.k; S = dk.dsd; kSrc = (type === "crest" ? "Figure 44-3B" : "Figure 44-3D") + ", maneuver " + crit; sSrc = kSrc; }
+    }
+    if (K === null) {
+      out += U.msg("fail", "No K value is tabulated for " + V + " mph with this criterion (" + (type === "sag" ? "Figure 44-3C starts at 20 mph; " : "") + "DSD figures cover 20 to 65 mph).");
+    }
+    var minLen = (type === "crest" ? IDM.vert.minLength.crest : IDM.vert.minLength.sag) * V;
+    var Lk = K !== null ? K * Aabs : NaN;
+    var Lgov = Math.max(isFinite(Lk) ? Lk : 0, minLen);
+    var L = isFinite(Lin) && Lin > 0 ? Lin : Math.ceil(Lgov / 10) * 10;
+    var Kp = L / Aabs;
+    out = U.stats([
+      ["Curve type", type === "crest" ? "Crest" : "Sag", "A = " + U.fmt(A, 2) + "%"],
+      ["Required K", K !== null ? K : "--", kSrc ? "" : ""],
+      ["Min. length", U.fmt(Lgov, 0), "ft"],
+      ["K provided", U.fmt(Kp, 1), "L = " + U.fmt(L, 0) + " ft"]
+    ]) + out;
+    var rows = [
+      ["Algebraic difference, A = G2 − G1", U.fmt(A, 3) + "%", ""],
+      ["Design sight distance, S", S !== null ? S + " ft" : "--", sSrc],
+      ["Required K", K !== null ? K : "--", kSrc],
+      ["L = K·A", isFinite(Lk) ? U.fmt(Lk, 1) + " ft" : "--", "Eq. 44-3.2"],
+      ["Minimum length, " + (type === "crest" ? "3V" : "3.2V"), U.fmt(minLen, 0) + " ft", type === "crest" ? "44-3.01(01) item 3" : "44-3.02(01) item 3"],
+      ["Governing minimum length", U.fmt(Lgov, 1) + " ft", "", "gov"]
+    ];
+    if (S !== null) {
+      var eqL = type === "crest" ? C.crestLength(Aabs, S) : C.sagLength(Aabs, S);
+      rows.push(["Length from sight-distance equation", U.fmt(eqL.L, 1) + " ft", "Eq. " + eqL.eq + " (no other curves or breaks within the sight line)"]);
+      var Sprov = type === "crest" ? C.crestSight(Aabs, L) : C.sagSight(Aabs, L);
+      rows.push(["Sight distance provided by L = " + U.fmt(L, 0) + " ft", isFinite(Sprov) ? U.fmt(Sprov, 0) + " ft" : "unlimited", "Equations solved for S"]);
+    }
+    out += U.kv(rows);
+    if (K !== null) {
+      var okK = Kp >= K - 1e-9, okMin = L >= minLen - 1e-9;
+      out += U.msg(okK ? "pass" : "fail", "K provided = " + U.fmt(Kp, 1) + (okK ? " ≥ " : " < ") + "required K = " + K + ". " + U.badge(okK, "K met", "K not met"));
+      if (!okK && S !== null) {
+        var Sp = type === "crest" ? C.crestSight(Aabs, L) : C.sagSight(Aabs, L);
+        if (Sp >= S) out += U.msg("warn", "The sight distance provided (" + U.fmt(Sp, 0) + " ft) still meets S = " + S + " ft (S ≥ L case). Per 44-3.01(01)/44-3.02(01) the K value is then a Level Three design-exception item instead of Level One; verify graphically.");
+        else out += U.msg("info", "SSD is a Level One design-exception criterion (Section 40-8.02).");
+      }
+      out += U.msg(okMin ? "pass" : "warn", "L = " + U.fmt(L, 0) + " ft " + (okMin ? "meets" : "is less than") + " the " + (type === "crest" ? "3V" : "3.2V") + " minimum of " + U.fmt(minLen, 0) + " ft" + (okMin ? "." : " (unless existing conditions make it impractical)."));
+    }
+    var kmax = curb ? IDM.vert.drainage.curbedMaxK : IDM.vert.drainage.uncurbedMaxK;
+    out += U.msg(Kp <= kmax ? "pass" : "warn", "Drainage: K = " + U.fmt(Kp, 1) + (Kp <= kmax ? " ≤ " : " > ") + kmax + (curb ? " (curbed / barrier)." : " (uncurbed).") + (Kp > kmax ? (curb ? " Evaluate pavement drainage near the " + (type === "crest" ? "high" : "low") + " point" + (type === "sag" ? "; flanking inlets may be needed." : ".") : " Desirable 0.15% grade 50 ft from the " + (type === "crest" ? "high" : "low") + " point is not reached.") : ""));
+
+    // geometry
+    if (isFinite(pvi) && isFinite(pvie)) {
+      var vc = C.verticalCurve(g1, g2, L, pvi, pvie);
+      var g = [
+        ["PVC", C.formatStation(vc.pvcSta), U.fmt(vc.pvcElev, 3)],
+        ["PVI", C.formatStation(vc.pviSta), U.fmt(vc.pviElev, 3)],
+        ["PVT", C.formatStation(vc.pvtSta), U.fmt(vc.pvtElev, 3)]
+      ];
+      if (vc.turnX !== null) g.push([(type === "crest" ? "High" : "Low") + " point", C.formatStation(vc.turnSta), U.fmt(vc.turnElev, 3)]);
+      out += "<h3 style='margin-top:14px'>Curve geometry</h3>" + U.table(["Point", "Station", "Elevation (ft)"], g);
+      out += U.kv([["External, M = (G2 − G1) L / 800", U.fmt(vc.M, 3) + " ft", "Offset from PVI to curve"], ["Curve elevation at PVI", U.fmt(vc.elevAt(L / 2), 3), ""]]);
+      if (vc.turnX === null) out += U.msg("info", "No high or low point within the curve (both grades have the same sign); the curve ends are the extreme points.");
+
+      // through point
+      var psta = C.parseStation(U.str("psta")), pel = U.num("pel");
+      if (isFinite(psta) && isFinite(pel)) {
+        var D = pvi - psta;
+        var tanElev = pvie - g1 * D / 100;
+        if (D < 0) { tanElev = pvie + g2 * (-D) / 100; }
+        var Z = pel - tanElev;
+        var sols = D > 0 ? C.curveThroughPoint(g1, g2, D, Z) : C.curveThroughPoint(-g2, -g1, -D, Z);
+        var txt = "Point P at " + C.formatStation(psta) + ": tangent elevation " + U.fmt(tanElev, 2) + ", Z = " + U.fmt(Z, 2) + " ft, D = " + U.fmt(Math.abs(D), 2) + " ft from the PVI. ";
+        if (sols.length) {
+          txt += "Length to pass through P: " + sols.map(function (s) { return U.fmt(s.L, 2) + " ft (X = " + U.fmt(s.X, 2) + " ft)"; }).join(" or ") + ". ";
+          var best = Math.max.apply(null, sols.map(function (s) { return s.L; }));
+          txt += K !== null ? (best / Aabs >= K ? "K = " + U.fmt(best / Aabs, 1) + " meets the required K." : "K = " + U.fmt(best / Aabs, 1) + " is below the required K.") : "";
+          out += U.msg("info", txt + " (Figure 44-3 I; enter this L above to see the curve.)");
+        } else out += U.msg("warn", txt + "No symmetrical curve with these grades passes through P (Z must have the same sign as G2 − G1).");
+      }
+      U.$("stations").innerHTML = stationTable(vc, inc);
+      draw(vc);
+    } else {
+      U.$("stations").innerHTML = U.msg("info", "Enter the PVI station and elevation to compute stations and elevations.");
+      U.svg("dia", 10, 10);
+    }
+    U.$("results").innerHTML = out;
+  }
+
+  function stationTable(vc, inc) {
+    if (!(inc > 0)) inc = 50;
+    var stations = [vc.pvcSta];
+    var first = Math.ceil((vc.pvcSta + 1e-6) / inc) * inc;
+    for (var s = first; s < vc.pvtSta - 1e-6 && stations.length < 400; s += inc) stations.push(s);
+    stations.push(vc.pvtSta);
+    if (vc.turnX !== null) stations.push(vc.turnSta);
+    stations.push(vc.pviSta);
+    stations = stations.filter(function (s, i, a) { return a.findIndex(function (t) { return Math.abs(t - s) < 1e-6; }) === i; }).sort(function (a, b) { return a - b; });
+    var rows = stations.map(function (s) {
+      var x = s - vc.pvcSta;
+      var tan = x <= vc.L / 2 ? vc.pvcElev + vc.g1 * x / 100 : vc.pviElev + vc.g2 * (x - vc.L / 2) / 100;
+      var elev = vc.elevAt(x);
+      var z = elev - tan; // equals (G2-G1)x^2/200L measured from the nearer tangent
+      var grade = vc.g1 + vc.A * x / vc.L;
+      var lbl = Math.abs(s - vc.pvcSta) < 1e-6 ? "PVC" : Math.abs(s - vc.pvtSta) < 1e-6 ? "PVT" : Math.abs(s - vc.pviSta) < 1e-6 ? "PVI" : (vc.turnX !== null && Math.abs(s - vc.turnSta) < 1e-6 ? (vc.type === "crest" ? "High pt" : "Low pt") : "");
+      return { cls: lbl ? "gov" : "", cells: [C.formatStation(s), lbl, U.fmt(x, 2), U.fmt(tan, 3), U.fmt(z, 3), U.fmt(elev, 3), U.fmt(grade, 3) + "%"] };
+    });
+    return U.table(["Station", "Point", "x from PVC (ft)", "Tangent elev.", "Tangent offset Z", "Curve elev.", "Grade"], rows, 2);
+  }
+
+  function draw(vc) {
+    var W = 900, H = 360, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var ext = vc.L * 0.25;
+    var s0 = vc.pvcSta - ext, s1 = vc.pvtSta + ext;
+    var e0 = vc.pvcElev - vc.g1 * ext / 100, e1 = vc.pvtElev + vc.g2 * ext / 100;
+    var elevs = [e0, e1, vc.pviElev, vc.pvcElev, vc.pvtElev];
+    for (var i = 0; i <= 40; i++) elevs.push(vc.elevAt(vc.L * i / 40));
+    var lo = Math.min.apply(null, elevs), hi = Math.max.apply(null, elevs);
+    var pad = (hi - lo) * 0.25 + 0.5;
+    lo -= pad; hi += pad;
+    var X = function (s) { return 70 + (s - s0) / (s1 - s0) * (W - 100); };
+    var Y = function (e) { return 30 + (hi - e) / (hi - lo) * (H - 90); };
+    // axes
+    for (var k = 0; k <= 4; k++) {
+      var ev = lo + (hi - lo) * k / 4;
+      U.line(svg, 70, Y(ev), W - 30, Y(ev), "var(--line)", 1);
+      U.text(svg, 64, Y(ev) + 4, ev.toFixed(1), { anchor: "end", size: 11 });
+    }
+    U.line(svg, X(s0), Y(e0), X(vc.pviSta), Y(vc.pviElev), "var(--ink-3)", 1.5, "6 5");
+    U.line(svg, X(vc.pviSta), Y(vc.pviElev), X(s1), Y(e1), "var(--ink-3)", 1.5, "6 5");
+    var d = "M" + X(s0) + "," + Y(e0) + " L" + X(vc.pvcSta) + "," + Y(vc.pvcElev);
+    for (var j = 1; j <= 80; j++) { var x = vc.L * j / 80; d += " L" + X(vc.pvcSta + x).toFixed(1) + "," + Y(vc.elevAt(x)).toFixed(1); }
+    d += " L" + X(s1) + "," + Y(e1);
+    U.path(svg, d, "var(--accent)", 3.5);
+    [["PVC", vc.pvcSta, vc.pvcElev], ["PVI", vc.pviSta, vc.pviElev], ["PVT", vc.pvtSta, vc.pvtElev]].forEach(function (p) {
+      U.line(svg, X(p[1]), Y(p[2]), X(p[1]), H - 50, "var(--ink-3)", 1, "2 3");
+      U.el(svg, "circle", { cx: X(p[1]), cy: Y(p[2]), r: 4.5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 });
+      U.text(svg, X(p[1]), H - 34, p[0], { anchor: "middle", size: 12, cls: "t-strong" });
+      U.text(svg, X(p[1]), H - 18, C.formatStation(p[1]) + "  El. " + p[2].toFixed(2), { anchor: "middle", size: 10 });
+    });
+    if (vc.turnX !== null) {
+      U.el(svg, "circle", { cx: X(vc.turnSta), cy: Y(vc.turnElev), r: 5, fill: "var(--sight)" });
+      U.text(svg, X(vc.turnSta), Y(vc.turnElev) + (vc.type === "sag" ? 20 : -12), (vc.type === "crest" ? "High" : "Low") + " pt " + C.formatStation(vc.turnSta) + ", " + vc.turnElev.toFixed(2), { anchor: "middle", size: 12, fill: "var(--sight)" });
+    }
+    U.text(svg, X((s0 + vc.pvcSta) / 2), Y((e0 + vc.pvcElev) / 2) - 10, "G1 = " + vc.g1 + "%", { anchor: "middle", size: 12 });
+    U.text(svg, X((s1 + vc.pvtSta) / 2), Y((e1 + vc.pvtElev) / 2) - 10, "G2 = " + vc.g2 + "%", { anchor: "middle", size: 12 });
+    U.dim(svg, X(vc.pvcSta), 18, X(vc.pvtSta), 18, "L = " + U.fmt(vc.L, 1) + " ft, K = " + U.fmt(vc.K, 1), { dy: -4 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curve Widening</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Curve Widening (Two-Lane Open Highway)</h1>
+  <p class="lede">Computes traveled-way widening on a two-lane horizontal curve with the Green Book Section 3.3.10 equations that IDM Section 305-3.06 refers to, then applies the INDOT practice: provide full-depth shoulders of the calculated width instead of widening the traveled way, and disregard widening of 2 ft or less.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Roadway</legend>
+        <div class="field"><label for="R">Radius of centerline, R (ft)</label><input id="R" type="number" value="500"></div>
+        <div class="field"><label for="V">Design speed, V (mph)</label><input id="V" type="number" value="45"></div>
+        <div class="field"><label for="Wn">Traveled-way width on tangent, Wn (ft)</label><select id="Wn"><option>20</option><option>22</option><option selected>24</option></select></div>
+        <div class="field"><label for="N">Number of lanes, N</label><input id="N" type="number" value="2" min="1"></div>
+      </fieldset>
+      <fieldset><legend>Design vehicle (enter from the Green Book)</legend>
+        <div class="field wide"><div class="msg warn" style="margin:0">The IDM does not tabulate design-vehicle dimensions for widening. The defaults below are <b>illustrative placeholders only</b>; replace them with your design vehicle's dimensions from the AASHTO Green Book.</div></div>
+        <div class="field"><label for="u">Track width on tangent, u (ft)</label><input id="u" type="number" step="0.1" value="8.5"></div>
+        <div class="field"><label for="wb">Wheelbases Li (ft)<small>Comma-separated, e.g. tractor, trailer</small></label><input id="wb" type="text" value="20, 40"></div>
+        <div class="field"><label for="A">Front overhang, A (ft)</label><input id="A" type="number" step="0.1" value="4"></div>
+        <div class="field"><label for="Lf">Wheelbase for front overhang term, L (ft)<small>Single unit or tractor</small></label><input id="Lf" type="number" step="0.1" value="20"></div>
+      </fieldset>
+      <fieldset><legend>Existing shoulders (optional)</legend>
+        <div class="field"><label for="fds">Full-depth shoulder width provided, each side (ft)</label><input id="fds" type="number" step="0.5" placeholder="e.g. 4"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Curve widening plan"></svg>
+    <div class="cap">Schematic plan: full-depth shoulders of the calculated width are carried from the beginning of the superelevation transition before the curve to the end of the transition beyond it (305-3.06).</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>IDM Section 305-3.06, Traveled Way Widening</h3>
+    <p>The Green Book gives calculated and design values for traveled-way widening on open-highway curves for two-lane highways, to address off-tracking and steering difficulty. For these conditions INDOT uses <b>full-depth shoulders on both sides of the curve in lieu of widening the traveled way</b>. Full-depth shoulders of the calculated width should be available from the beginning of the superelevation transition before the curve to the end of the transition beyond the curve. <b>Calculated widening of 2 ft or less can be disregarded.</b></p>
+    <h3>Green Book Section 3.3.10 equations (not reproduced in the IDM)</h3>
+    <div class="eq">w = Wc − Wn &nbsp;&nbsp; Wc = N(U + C) + (N − 1) FA + Z</div>
+    <div class="eq">U = u + R − √(R² − ΣLi²) &nbsp;&nbsp; FA = √(R² + A(2L + A)) − R &nbsp;&nbsp; Z = 0.1 V / √R</div>
+    <p>C is the lateral clearance per vehicle: 2.0, 2.5 and 3.0 ft for tangent traveled-way widths of 20, 22 and 24 ft. These equations and the clearance values come from the Green Book, not from the IDM; verify them and the design-vehicle dimensions against your edition of the Green Book. Rounding of Green Book design values is not applied.</p>
+    <p>Wider turning roadways at intersections are a separate topic (IDM Figure 46-3B, derived pavement widths for turning roadways).</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/cross-section.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "cross-section", title: "Curve Widening", chapters: ["305"] });
+
+  function compute() {
+    var R = U.num("R"), V = U.num("V"), Wn = Number(U.str("Wn")), N = U.num("N"), u = U.num("u"), A = U.num("A"), Lf = U.num("Lf"), fds = U.num("fds");
+    var wbs = U.str("wb").split(/[,;\s]+/).map(Number).filter(function (x) { return isFinite(x) && x > 0; });
+    if (!(R > 0) || !wbs.length) { U.$("results").innerHTML = U.msg("warn", "Enter a radius and at least one wheelbase."); return; }
+    var r = C.gbWidening({ N: N, Wn: Wn, R: R, V: V, u: u, wheelbases: wbs, A: A, Lfront: Lf });
+    var w = r.w, need = w > IDM.xs.widening.disregardFt;
+    var out = U.stats([["Calculated widening, w", U.fmt(w, 2), "ft"], ["IDM action", need ? "Full-depth shoulders" : "Disregard", ""]]);
+    out += U.kv([
+      ["Track width on curve, U", U.fmt(r.U, 2) + " ft", "u + R − √(R² − ΣLi²)"],
+      ["Lateral clearance, C", U.fmt(r.C, 2) + " ft", "Green Book, for Wn = " + Wn + " ft"],
+      ["Front overhang width, FA", U.fmt(r.FA, 2) + " ft", "√(R² + A(2L + A)) − R"],
+      ["Extra width allowance, Z", U.fmt(r.Z, 2) + " ft", "0.1 V / √R"],
+      ["Traveled-way width on curve, Wc", U.fmt(r.Wc, 2) + " ft", "N(U + C) + (N − 1)FA + Z"],
+      ["Widening, w = Wc − Wn", U.fmt(w, 2) + " ft", "", "gov"]
+    ]);
+    if (!need) out += U.msg("pass", "Calculated widening of " + U.fmt(w, 2) + " ft is 2 ft or less and can be disregarded (305-3.06).");
+    else {
+      out += U.msg("info", "Provide full-depth shoulders on both sides of the curve, of the calculated width (" + U.fmt(w, 2) + " ft total; " + U.fmt(w / 2, 2) + " ft per side if split equally), from the start of the superelevation transition before the curve to the end of the transition beyond it (305-3.06). Confirm how the width is apportioned with the project reviewer.");
+      if (isFinite(fds)) {
+        var ok = 2 * fds >= w - 1e-9;
+        out += U.msg(ok ? "pass" : "fail", "Full-depth shoulders of " + fds + " ft each side (" + 2 * fds + " ft total) " + (ok ? "cover" : "do not cover") + " the calculated widening of " + U.fmt(w, 2) + " ft. " + U.badge(ok));
+      }
+    }
+    U.$("results").innerHTML = out;
+    draw(w, Wn, need);
+  }
+
+  function draw(w, Wn, need) {
+    var W = 900, H = 300, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var cy = 150, half = Wn / 2, sc = 3.2, sh = Math.max(w / 2, 1);
+    var x0 = 40, x1 = 300, x2 = 600, x3 = W - 40;
+    function band(off1, off2, fill) {
+      var pts = [[x0, cy - off1], [x1, cy - off1], [x2, cy - off1], [x3, cy - off1], [x3, cy - off2], [x2, cy - off2], [x1, cy - off2], [x0, cy - off2]];
+      U.el(svg, "polygon", { points: pts.map(function (p) { return p.join(","); }).join(" "), fill: fill });
+    }
+    // traveled way
+    U.el(svg, "rect", { x: x0, y: cy - half * sc, width: x3 - x0, height: Wn * sc, fill: "var(--road)" });
+    U.line(svg, x0, cy, x3, cy, "var(--mark)", 2, "16 10");
+    if (need) {
+      var d = sh * sc;
+      ["top", "bot"].forEach(function (k) {
+        var s = k === "top" ? -1 : 1, e = cy + s * half * sc;
+        U.el(svg, "polygon", { points: [x0 + 60, e, x1, e + s * d, x2, e + s * d, x3 - 60, e].join(" ").replace(/(\d) (\d)/g, "$1,$2"), fill: "var(--warn-soft)", stroke: "var(--warn)" });
+      });
+      U.text(svg, (x1 + x2) / 2, cy - half * sc - d - 8, "Full-depth shoulder, w/2 = " + U.fmt(w / 2, 2) + " ft each side", { anchor: "middle", size: 12, fill: "var(--warn)" });
+    }
+    U.line(svg, x1, 30, x1, H - 30, "var(--ink-3)", 1, "4 4");
+    U.line(svg, x2, 30, x2, H - 30, "var(--ink-3)", 1, "4 4");
+    U.text(svg, x1, 24, "PC", { anchor: "middle", size: 12, cls: "t-strong" });
+    U.text(svg, x2, 24, "PT", { anchor: "middle", size: 12, cls: "t-strong" });
+    U.text(svg, x0 + 60, H - 20, "Begin super. transition", { anchor: "middle", size: 11 });
+    U.text(svg, x3 - 60, H - 20, "End super. transition", { anchor: "middle", size: 11 });
+    U.dim(svg, x0 + 20, cy - half * sc, x0 + 20, cy + half * sc, "", {});
+    U.text(svg, x0 + 26, cy + 4, "Wn = " + Wn + " ft", { size: 12, fill: "var(--surface)" });
+    if (!need) U.text(svg, W / 2, H - 46, "Widening ≤ 2 ft: disregard", { anchor: "middle", size: 14, fill: "var(--pass)" });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardrail Length of Need</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Guardrail Length of Need</h1>
+  <p class="lede">Calculates the barrier length of need in advance of a hazard for adjacent traffic (Equations 49-4.2 to 49-4.4), the length for opposing traffic on a two-way roadway, and the total length LTOT = LADV + LHAZ + LOPP (Equation 49-4.1), using the runout length and shy-line offset from Figure 49-4E.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Traffic</legend>
+        <div class="field"><label for="V">Design speed (mph)</label><select id="V"></select></div>
+        <div class="field"><label for="aadt">Design-year AADT</label><input id="aadt" type="number" step="100" value="7000"></div>
+        <div class="field"><label for="road">Roadway</label><select id="road"><option value="2way" selected>Two-way, undivided</option><option value="div">Divided / one-way</option></select></div>
+      </fieldset>
+      <fieldset><legend>Adjacent traffic (approach end)</legend>
+        <div class="field"><label for="LC">Clear-zone width, LC (ft)<small>From the Clear-Zone page</small></label><input id="LC" type="number" step="1" value="30"></div>
+        <div class="field"><label for="LH">ETL to back of hazard, LH (ft)</label><input id="LH" type="number" step="0.5" value="25"></div>
+        <div class="field"><label for="L3">ETL to front of hazard, L3 (ft)</label><input id="L3" type="number" step="0.5" value="14"></div>
+        <div class="field"><label for="L2">ETL to face of barrier, L2 (ft)</label><input id="L2" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="btype">Barrier type</label><select id="btype"><option value="gr" selected>Guardrail</option><option value="cb">Concrete barrier</option></select></div>
+        <div class="field"><label for="flare">Layout</label><select id="flare"><option value="par" selected>Parallel to roadway</option><option value="max">Flared at the Figure 49-4F maximum rate</option><option value="user">Flared at my rate</option></select></div>
+        <div class="field"><label for="fa">My flare rate a (a:1)</label><input id="fa" type="number" step="1" value="15"></div>
+        <div class="field"><label for="L1">Tangent (unflared) length upstream of hazard, L1 (ft)</label><input id="L1" type="number" step="5" value="25"></div>
+        <div class="field"><label for="gret">End treatment</label><select id="gret"><option value="os" selected>GRET type OS, MS or II</option><option value="t1">GRET type I</option></select></div>
+        <div class="field"><label for="pier">Bridge support ≤ 16 ft from ETL?<small>Round up to 6.25 ft (49-4.02(04))</small></label><select id="pier"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+      </fieldset>
+      <fieldset><legend>Hazard and opposing traffic</legend>
+        <div class="field"><label for="LHAZ">Hazard length along roadway, LHAZ (ft)</label><input id="LHAZ" type="number" step="5" value="50"></div>
+        <div class="field"><label for="LCo">Opposing: clear-zone width (ft)<small>Measured from the centerline</small></label><input id="LCo" type="number" step="1" value="30"></div>
+        <div class="field"><label for="LHo">Opposing: centerline to back of hazard (ft)</label><input id="LHo" type="number" step="0.5" value="37"></div>
+        <div class="field"><label for="L2o">Opposing: centerline to face of barrier (ft)</label><input id="L2o" type="number" step="0.5" value="24"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Length-of-need layout (approach end)</h2>
+    <svg id="dia" aria-label="Barrier length of need layout"></svg>
+    <div class="cap">Plan view of Figure 49-4D. The runout path runs from the end of LR on the edge of travel lane to the back of the hazard (or the clear-zone limit, whichever is less); the barrier must intersect it. Lateral scale exaggerated.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <div class="eq">LTOT = LADV + LHAZ + LOPP &nbsp;&nbsp; (Equation 49-4.1)</div>
+    <div class="eq">Flared: X = [LH + (b/a)(L1) − L2] / [(b/a) + (LH/LR)] &nbsp; (49-4.2) &nbsp;&nbsp; Y = LH − (LH/LR)(X) &nbsp; (49-4.3)</div>
+    <div class="eq">Parallel: X = LR (LH − L2) / LH &nbsp;&nbsp; (49-4.4)</div>
+    <ul>
+      <li>X is the length of need in advance of the hazard; Y the lateral offset of the barrier at the beginning of the length of need. LH is the distance from the edge of travel lane to the back of the hazard, or the clear-zone width LC if smaller (the lesser is used, 49-4.02(01) item 1).</li>
+      <li><b>Figure 49-4E (Rev. April 2013):</b> runout length LR by design speed and design-year AADT (≤ 1000, 1000–5000, 5000–10000, &gt; 10000) and shy-line offset Ls. Speeds between rows (35, 65 mph) are interpolated, as in IDM Example 49-4.1.</li>
+      <li>The barrier should be beyond the shy-line offset where practical (49-4.01(01)). Flare rates must not exceed Figure 49-4F (see the Flare Rates page).</li>
+      <li>The mathematical solution applies to tangent sections only. Use the graphical solution for the outside of a horizontal curve (tangential runout path, Figure 49-4H) and for complex sites.</li>
+      <li><b>Minimum length (Figure 49-4E(1)):</b> 50 ft with GRET type OS, MS or II; with type I, 100 ft at 50 mph or more and 50 ft at 45 mph or less.</li>
+      <li><b>Opposing traffic (49-4.02(02)):</b> lateral dimensions from the edge of the opposing travel lane (the centerline on a 2-lane road). If needed, the length is the greater of the calculation or 100 ft (≥ 50 mph) / 50 ft (≤ 45 mph). If the barrier is beyond the opposing clear zone, no additional barrier is needed (consider a crashworthy end treatment); if the barrier is within it but the hazard is beyond it, use a crashworthy end treatment; a hazard extending well beyond may be shielded only to LC.</li>
+      <li><b>Divided highways:</b> the trailing-end length beyond the hazard follows Figure 49-4J; avoid gaps of less than about 200 ft between runs.</li>
+      <li><b>Bridge supports ≤ 16 ft from the edge of travel lane (49-4.02(04)):</b> round the calculated length up to the next multiple of 6.25 ft; inside the clear zone use at least 100 ft (≥ 50 mph) or 50 ft (≤ 45 mph). Guardrail configurations and pay lengths at bridges and supports follow Figures 49-4E(2) to 49-4E(10).</li>
+      <li>Check the barrier's dynamic deflection against the distance to the hazard (Figure 49-4A); the deflection table is shown in the results.</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/roadside.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "roadside", title: "Guardrail Length of Need", chapters: ["49"] });
+  U.speedOptions("V", [30, 35, 40, 45, 50, 55, 60, 65, 70], 60);
+
+  function compute() {
+    var V = U.num("V"), aadt = U.num("aadt"), road = U.str("road");
+    var LC = U.num("LC"), LHin = U.num("LH"), L3 = U.num("L3"), L2 = U.num("L2"), btype = U.str("btype"), flare = U.str("flare"), fa = U.num("fa"), L1 = U.num("L1") || 0;
+    var gret = U.str("gret"), pier = U.str("pier") === "yes", LHAZ = U.num("LHAZ") || 0;
+    var d = C.lonDesign(V, aadt);
+    var out = "", rows = [];
+    if (d.outOfRange) { U.$("results").innerHTML = U.msg("fail", "Design speed outside Figure 49-4E (30 to 70 mph)."); return; }
+    var LH = isFinite(LC) ? Math.min(LHin, LC) : LHin;
+    rows.push(["Runout length, LR", U.fmt(d.LR, 1) + " ft", "Figure 49-4E, AADT " + d.band + (d.interpolated ? "; interpolated between speed rows" : "")]);
+    rows.push(["Shy-line offset, Ls", U.fmt(d.Ls, 2) + " ft", "Figure 49-4E" + (d.interpolated ? " (interpolated)" : "")]);
+    rows.push(["Lateral extent used, LH", U.fmt(LH, 1) + " ft", LH < LHin ? "Clear-zone width governs (LC < hazard)" : "Back of hazard"]);
+    var fr = C.flareRate(V > 65 ? 65 : V), aUse = 0, inside = L2 < d.Ls;
+    var amax = fr ? (inside ? fr.inside : (btype === "cb" ? fr.concrete : fr.guardrail)) : null;
+    if (flare === "max") aUse = amax; else if (flare === "user") aUse = fa;
+    if (flare !== "par" && amax && aUse < amax) out += U.msg("fail", "Flare " + aUse + ":1 is sharper than the Figure 49-4F maximum of " + amax + ":1 for " + (inside ? "a barrier inside the shy line" : "outside the shy line, " + (btype === "cb" ? "concrete barrier" : "guardrail")) + ".");
+    if (V > 65 && flare !== "par") out += U.msg("warn", "Figure 49-4F tabulates flare rates to 65 mph; the 65 mph rates were used.");
+    if (!(LH > L2)) { U.$("results").innerHTML = U.kv(rows) + U.msg("pass", "The barrier face (L2 = " + L2 + " ft) is at or beyond the lateral extent to be protected; no length of need is required in advance of the hazard by Eq. 49-4.4. Check the layout graphically."); draw(null); return; }
+    var lon = C.lengthOfNeed({ LR: d.LR, LH: LH, L1: L1, L2: L2, flareA: aUse || 0 });
+    var X = lon.X;
+    if (!lon.parallel && L1 > X) { lon = C.lengthOfNeed({ LR: d.LR, LH: LH, L1: 0, L2: L2, flareA: 0 }); X = lon.X; out += U.msg("info", "L1 exceeds the computed length, so the barrier is parallel over the full length of need."); }
+    rows.push([lon.parallel ? "X = LR(LH − L2)/LH" : "X (flared, Eq. 49-4.2)", U.fmt(X, 1) + " ft", lon.parallel ? "Eq. 49-4.4" : "b/a = 1/" + aUse + ", L1 = " + L1 + " ft"]);
+    if (!lon.parallel) rows.push(["Y, offset at start of length of need", U.fmt(lon.Y, 2) + " ft", "Eq. 49-4.3"]);
+    var minTab = gret === "t1" ? (V >= 50 ? 100 : 50) : 50;
+    var LADV = Math.max(X, minTab), why = X < minTab ? "Figure 49-4E(1) minimum governs" : "Calculated";
+    if (pier) {
+      var r = C.ceilTo(X, 6.25), pmin = V >= 50 ? 100 : 50;
+      LADV = Math.max(r, pmin, minTab);
+      why = "Rounded up to a multiple of 6.25 ft (" + U.fmt(r, 2) + " ft); minimum " + pmin + " ft for a support inside the clear zone (49-4.02(04))";
+    }
+    rows.push(["Length of need in advance, LADV", U.fmt(LADV, 1) + " ft", why, "gov"]);
+
+    // opposing
+    var LOPP = 0, oppNote = "";
+    if (road === "2way") {
+      var LCo = U.num("LCo"), LHo = U.num("LHo"), L2o = U.num("L2o");
+      if (L2o >= LCo) { oppNote = "Barrier is beyond the opposing clear zone: no additional barrier; consider a crashworthy end treatment (49-4.02(02) item 1)."; }
+      else if (LHo > LCo && L3 + (LHo - LHin) >= LCo) { oppNote = "Barrier within the opposing clear zone but the hazard is beyond it: no additional barrier, use a crashworthy end treatment (item 2)."; }
+      else {
+        var LHuse = Math.min(LHo, LCo);
+        var Xo = d.LR * (LHuse - L2o) / LHuse;
+        var omin = V >= 50 ? IDM.road.opposingMin.highSpeed : IDM.road.opposingMin.lowSpeed;
+        LOPP = Math.max(Xo, omin);
+        oppNote = "X = LR(LH − L2)/LH = " + U.fmt(Xo, 1) + " ft with LH = " + U.fmt(LHuse, 1) + " ft from the centerline; minimum " + omin + " ft (49-4.02(02)).";
+      }
+      rows.push(["Opposing-traffic length, LOPP", U.fmt(LOPP, 1) + " ft", oppNote]);
+    } else rows.push(["Trailing end, LOPP", "See Figure 49-4J", "Divided highway: graphical (49-4.02(03))"]);
+    var LTOT = LADV + LHAZ + LOPP;
+    rows.push(["Total, LTOT = LADV + LHAZ + LOPP", U.fmt(LTOT, 1) + " ft", "Eq. 49-4.1" + (road === "div" ? " (plus trailing end per Figure 49-4J)" : ""), "gov"]);
+    out = U.stats([["LR", U.fmt(d.LR, 0), "ft"], ["X (advance)", U.fmt(X, 1), "ft"], ["LADV", U.fmt(LADV, 1), "ft"], ["LTOT", U.fmt(LTOT, 1), "ft"]]) + U.kv(rows) + out;
+    out += inside ? U.msg("warn", "Barrier face at " + L2 + " ft is inside the shy-line offset of " + U.fmt(d.Ls, 1) + " ft. Place it beyond the shy line where practical (49-4.01(01)).") : U.msg("pass", "Barrier face is beyond the shy-line offset (" + U.fmt(d.Ls, 1) + " ft).");
+    var gap = L3 - L2;
+    if (isFinite(gap)) {
+      var defl = IDM.road.deflection.rows.filter(function (r) { return r[3] <= gap + 1e-9; });
+      out += U.msg(gap > 0 ? "info" : "fail", "Clear distance from barrier face to hazard face: " + U.fmt(gap, 2) + " ft. Barrier systems in Figure 49-4A with dynamic deflection within this width: " + (defl.length ? defl.map(function (r) { return r[1] + " (" + r[3].toFixed(2) + " ft)"; }).join("; ") : "none") + ".");
+    }
+    U.$("results").innerHTML = out;
+    draw({ LR: d.LR, LH: LH, L2: L2, L3: L3, X: X, Y: lon.parallel ? L2 : lon.Y, L1: L1, parallel: lon.parallel, Ls: d.Ls, LHAZ: LHAZ, LC: LC });
+  }
+
+  function draw(p) {
+    var W = 900, H = 320, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    if (!p) { U.text(svg, W / 2, H / 2, "No length of need required", { anchor: "middle", size: 16 }); return; }
+    // x: distance upstream from hazard upstream face (to left), y: lateral offset from ETL downward
+    var hx = W - 160; // screen x of hazard upstream face
+    var sx = (hx - 60) / Math.max(p.LR, p.X) , sy = (H - 110) / Math.max(p.LH, p.LC || 0, 1) ;
+    var X = function (d) { return hx - d * sx; }, Y = function (o) { return 60 + o * sy; };
+    U.el(svg, "rect", { x: 0, y: 30, width: W, height: 30, fill: "var(--road)" });
+    U.line(svg, 0, 60, W, 60, "var(--ink)", 2);
+    U.text(svg, 10, 52, "Traffic →", { size: 12, fill: "var(--surface)" });
+    U.text(svg, 12, 74, "Edge of travel lane", { size: 11 });
+    // hazard
+    var hw = Math.max(p.LHAZ * sx, 30);
+    U.el(svg, "rect", { x: hx, y: Y(p.L3), width: Math.min(hw, W - hx - 10), height: Math.max(Y(p.LH) - Y(p.L3), 4), fill: "var(--fail)", opacity: 0.5 });
+    U.text(svg, hx + 6, Y(p.LH) + 16, "Hazard", { size: 12 });
+    // shy line
+    U.line(svg, 0, Y(p.Ls), W, Y(p.Ls), "var(--warn)", 1, "6 4");
+    U.text(svg, 10, Y(p.Ls) - 4, "Shy line Ls = " + U.fmt(p.Ls, 1) + " ft", { size: 11, fill: "var(--warn)" });
+    if (p.LC) { U.line(svg, 0, Y(p.LC), W, Y(p.LC), "var(--pass)", 1, "2 4"); U.text(svg, 10, Y(p.LC) - 4, "Clear-zone limit LC", { size: 11, fill: "var(--pass)" }); }
+    // runout path
+    U.line(svg, X(p.LR), 60, hx, Y(p.LH), "var(--sight)", 1.8, "7 4");
+    U.text(svg, X(p.LR), 88, "End of LR", { anchor: "middle", size: 11, fill: "var(--sight)" });
+    // barrier
+    var b0x = X(p.X), b0y = Y(p.Y);
+    if (p.parallel) U.line(svg, b0x, Y(p.L2), hx + Math.min(hw, W - hx - 10), Y(p.L2), "var(--accent)", 4);
+    else {
+      U.line(svg, b0x, b0y, X(p.L1), Y(p.L2), "var(--accent)", 4);
+      U.line(svg, X(p.L1), Y(p.L2), hx + Math.min(hw, W - hx - 10), Y(p.L2), "var(--accent)", 4);
+    }
+    U.el(svg, "circle", { cx: b0x, cy: p.parallel ? Y(p.L2) : b0y, r: 5, fill: "var(--accent)" });
+    U.text(svg, b0x, (p.parallel ? Y(p.L2) : b0y) + 20, "Begin length of need", { anchor: "middle", size: 11, fill: "var(--accent)" });
+    U.dim(svg, X(p.X), H - 20, hx, H - 20, "X = " + U.fmt(p.X, 1) + " ft", { dy: -6, size: 13 });
+    U.dim(svg, X(p.LR), 18, hx, 18, "LR = " + U.fmt(p.LR, 0) + " ft", { dy: -4 });
+    U.text(svg, hx + 8, Y(p.L2) - 6, "L2 = " + p.L2, { size: 11 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

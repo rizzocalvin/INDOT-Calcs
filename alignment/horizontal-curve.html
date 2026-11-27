@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizontal Curve</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Horizontal Curve: Minimum Radius &amp; Curve Elements</h1>
+  <p class="lede">Checks a proposed radius against the IDM minimum radius for the selected design speed and maximum superelevation, checks curve length against Section 305-3.02, and computes the simple-curve elements and PC/PT stations (Figure 305-6B).</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Design controls</legend>
+        <div class="field"><label for="V">Design speed, V</label><select id="V"></select></div>
+        <div class="field"><label for="kind">Superelevation condition<small>Figure 305-4A</small></label>
+          <select id="kind">
+            <option value="8">Open roadway, emax = 8% (Fig. 305-4D)</option>
+            <option value="6" selected>Open roadway, emax = 6% (Fig. 305-4C)</option>
+            <option value="4">Open roadway, emax = 4%, urban (Fig. 305-4B)</option>
+            <option value="LS">Low-speed urban, Method 2 (Fig. 305-4E)</option>
+          </select></div>
+        <div class="field"><label for="fac">Facility type for curve length<small>Section 305-3.02</small></label>
+          <select id="fac">
+            <option value="hsla">High-speed limited access</option>
+            <option value="hs" selected>Other high-speed facility</option>
+            <option value="ls">Low-speed facility</option>
+          </select></div>
+      </fieldset>
+      <fieldset><legend>Proposed curve</legend>
+        <div class="field"><label for="R">Radius, R (ft)</label><input id="R" type="number" step="1" value="1500"></div>
+        <div class="field"><label for="delta">Deflection angle, Δ (degrees)<small>Decimal degrees</small></label><input id="delta" type="number" step="0.0001" value="38.34"></div>
+        <div class="field"><label for="pi">PI station<small>e.g. 20+25.36</small></label><input id="pi" type="text" value="20+25.36"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Plan view of horizontal curve"></svg>
+    <div class="cap">Plan view drawn to scale from your inputs (deflection shown to the right).</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>Minimum radius (IDM 305-3.03)</h3>
+    <div class="eq">R = V² / [15 (e + f)] &nbsp;&nbsp; (Equation 305-3.1)</div>
+    <p>The minimum radius uses emax and the limiting side-friction factor fmax listed at the top of Figures 305-4B through 305-4E. The IDM tabulated minimum radius (last row of each table) governs; the equation value is shown as a check. Using the minimum radius should be avoided where practical because it forces the maximum superelevation rate. For rural and high-speed facilities, radii in the dark-shaded area of the 6% and 8% tables should be used only where unusual design circumstances dictate.</p>
+    <h3>Selecting emax (Figure 305-4A)</h3>
+    <ul>
+      <li>Rural, all speeds: 6% (8% may be retained on reconstruction unless the curve has an unacceptable superelevation-related crash history).</li>
+      <li>Rural frontage roads: 8%. High-speed urban (V ≥ 50 mph): 6%.</li>
+      <li>Low-speed urban (V ≤ 45 mph, except ramps), turning roadways, approaches to roundabouts/DDIs: Method 2, Figure 305-4E.</li>
+      <li>System ramps 6% (loops may use 8%); service ramps 6% or 8%; last exit-ramp curve to a stop/signal terminal 4% or 6%.</li>
+      <li>Chapter 53 note: superelevation should not exceed emax = 8% because of snow and ice.</li>
+    </ul>
+    <h3>Length of curve (IDM 305-3.02)</h3>
+    <ul>
+      <li>High-speed limited-access facilities: 30V desirable, 15V minimum.</li>
+      <li>Other high-speed facilities: 15V minimum.</li>
+      <li>Low-speed facilities: 15V where practical; shorter curves are expected at roundabouts and Method 2 urban facilities.</li>
+    </ul>
+    <h3>Curve elements (Figure 305-6B)</h3>
+    <div class="eq">T = R tan(Δ/2) &nbsp; L = πRΔ/180 &nbsp; E = R/cos(Δ/2) − R &nbsp; LC = 2R sin(Δ/2) &nbsp; M = R[1 − cos(Δ/2)] &nbsp; D = 5729.58/R</div>
+    <p>PC = PI − T, PT = PC + L. Other limits in Chapter 305: compound-curve radius ratios (305-3.04(02)), broken-back tangent 1500 ft on freeways or 15V elsewhere (305-3.04(03)), and 300 ft minimum between reverse curves with a continuously rotating plane (305-3.04(04)).</p>
+    <p>The default inputs reproduce IDM Figure 305-6C (Δ = 38.34°, D = 3°30', PI = 20+25.36) when R is set to 1637.02 ft.</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/horizontal.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc, H = IDM.horiz;
+  U.page({ section: "alignment", title: "Horizontal Curve", chapters: ["305", "53"] });
+  U.speedOptions("V", [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70], 60);
+
+  function compute() {
+    var V = U.num("V"), kind = U.str("kind"), fac = U.str("fac"), R = U.num("R"), d = U.num("delta"), pi = C.parseStation(U.str("pi"));
+    var t = C.superTable(kind), out = "";
+    var tr = C.tableRmin(kind, V);
+    if (!tr) {
+      U.$("results").innerHTML = U.msg("fail", "Figure " + t.figure + " does not tabulate " + V + " mph (range " + t.speeds[0] + " to " + t.speeds[t.speeds.length - 1] + " mph).");
+      draw(R, d, null); return;
+    }
+    var emax = tr.e, f = tr.f;
+    var Req = C.minRadius(V, emax, f);
+    var ok = R >= tr.R;
+    out += U.stats([["Min. radius (table)", U.fmt(tr.R, 0), "ft"], ["Proposed R", U.fmt(R, 0), "ft"], ["Status", ok ? "OK" : "Below min."]]);
+    var rows = [
+      ["emax / fmax", emax + "% / " + f, "Figure " + t.figure],
+      ["Minimum radius, Figure " + t.figure, U.fmt(tr.R, 0) + " ft", "Tabulated at e = " + emax + "%", "gov"],
+      ["Minimum radius, Eq. 305-3.1", U.fmt(Req, 0) + " ft", "V²/15(e+f) = " + V + "²/15(" + (emax / 100).toFixed(2) + " + " + f + ")"]
+    ];
+    var de = C.designE(kind, V, R);
+    if (!de.error) rows.push(["Design superelevation for R", (de.row === "NC" ? "NC" : de.row === "RC" ? "RC" : de.eDesign.toFixed(1) + "%") + " (interp. " + de.eInterp.toFixed(2) + "%)", "See Superelevation page"]);
+    out += U.kv(rows);
+    out += ok ? U.msg("pass", "R = " + R + " ft meets the minimum radius of " + tr.R + " ft for " + V + " mph. " + U.badge(true, "Radius OK"))
+              : U.msg("fail", "R = " + R + " ft is less than the minimum radius of " + tr.R + " ft for " + V + " mph with " + (kind === "LS" ? "Method 2 (e = 6%)" : "emax = " + kind + "%") + ". " + U.badge(false, "Radius not met"));
+    if (de.shaded) out += U.msg("warn", "R is below the smallest unshaded radius for " + V + " mph, so the design e falls in the dark-shaded area of Figure " + t.figure + ". For rural and high-speed facilities, use only where unusual design circumstances dictate.");
+    if (ok && R < 1.1 * tr.R) out += U.msg("info", "R is within 10% of the minimum. Section 305-3.03 says use of the minimum radius should be avoided where practical.");
+    if (kind === "4") out += U.msg("info", "Use of emax = 4% should be limited to urban conditions (Figure 305-4B).");
+    if (kind === "LS" && V >= 50) out += U.msg("warn", "Low-speed urban criteria apply to V ≤ 45 mph.");
+
+    // curve elements
+    if (R > 0 && d > 0 && d < 180) {
+      var ce = C.curveElements(R, d, pi);
+      var crows = [
+        ["Tangent length, T", U.fmt(ce.T, 2) + " ft"], ["Curve length, L", U.fmt(ce.L, 2) + " ft"], ["External, E", U.fmt(ce.E, 2) + " ft"],
+        ["Middle ordinate, M", U.fmt(ce.M, 2) + " ft"], ["Long chord, LC", U.fmt(ce.LC, 2) + " ft"], ["Degree of curve, D (arc)", U.fmt(ce.D, 4) + "°"]
+      ];
+      if (isFinite(pi)) crows.push(["PC station", C.formatStation(ce.PC)], ["PT station", C.formatStation(ce.PT)]);
+      out += "<h3 style='margin-top:14px'>Curve elements (Figure 305-6B)</h3>" + U.kv(crows);
+      var minL = 15 * V, desL = fac === "hsla" ? 30 * V : null;
+      var lok = ce.L >= minL;
+      var lmsg = "Curve length " + U.fmt(ce.L, 0) + " ft vs 15V = " + minL + " ft" + (desL ? " (desirable 30V = " + desL + " ft)" : "") + ". ";
+      if (fac === "ls") out += U.msg(lok ? "pass" : "info", lmsg + (lok ? "15V provided." : "Low speed: 15V where practical; shorter curves are expected at roundabouts and Method 2 urban facilities."));
+      else out += U.msg(lok ? (desL && ce.L < desL ? "warn" : "pass") : "fail", lmsg + (lok ? (desL && ce.L < desL ? "Meets minimum; below the 30V desirable length." : U.badge(true, "Length OK")) : U.badge(false, "Below 15V minimum")));
+      draw(R, d, ce);
+    } else {
+      out += U.msg("warn", "Enter a deflection angle between 0 and 180 degrees to compute curve elements.");
+      draw(R, d, null);
+    }
+    U.$("results").innerHTML = out;
+  }
+
+  function draw(R, d, ce) {
+    var W = 900, Hh = 420, svg = U.svg("dia", W, Hh);
+    U.defs(svg);
+    if (!ce) { U.text(svg, W / 2, Hh / 2, "Enter radius and deflection angle", { anchor: "middle", size: 16 }); return; }
+    var dr = C.rad(d);
+    // geometry in local coords: PI at origin, back tangent along -x axis direction
+    var T = ce.T;
+    var PC = [-T, 0], PI = [0, 0], PT = [T * Math.cos(dr), -T * Math.sin(dr)];
+    var center = [-T, -R];
+    // fit
+    var pts = [PC, PI, PT, [PC[0] - 0.25 * T, 0], [PT[0] + 0.25 * T * Math.cos(dr), PT[1] - 0.25 * T * Math.sin(dr)]];
+    var midAng = Math.PI / 2 - dr / 2;
+    var mid = [center[0] + R * Math.cos(Math.PI / 2 - dr / 2 - 0) , 0];
+    // curve points
+    var arc = [];
+    for (var i = 0; i <= 60; i++) {
+      var a = Math.PI / 2 - dr * i / 60;
+      arc.push([center[0] + R * Math.cos(a), center[1] + R * Math.sin(a)]);
+    }
+    arc.forEach(function (p) { pts.push(p); });
+    var showCenter = d >= 75; if (showCenter) pts.push(center);
+    else U.text(svg, W - 20, Hh - 14, "R = " + U.fmt(R, 0) + " ft (center off-sheet)", { anchor: "end", size: 13 });
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs), minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    var pad = 50, sc = Math.min((W - 2 * pad) / (maxX - minX || 1), (Hh - 2 * pad) / (maxY - minY || 1));
+    function P(p) { return [pad + (p[0] - minX) * sc + ((W - 2 * pad) - (maxX - minX) * sc) / 2, pad + (maxY - p[1]) * sc + ((Hh - 2 * pad) - (maxY - minY) * sc) / 2]; }
+    var a0 = P([PC[0] - 0.25 * T, 0]), pc = P(PC), pi = P(PI), pt = P(PT), a1 = P([PT[0] + 0.25 * T * Math.cos(dr), PT[1] - 0.25 * T * Math.sin(dr)]);
+    U.line(svg, a0[0], a0[1], pc[0], pc[1], "var(--ink)", 3);
+    U.line(svg, pt[0], pt[1], a1[0], a1[1], "var(--ink)", 3);
+    U.line(svg, pc[0], pc[1], pi[0], pi[1], "var(--ink-3)", 1.2, "6 5");
+    U.line(svg, pi[0], pi[1], pt[0], pt[1], "var(--ink-3)", 1.2, "6 5");
+    U.path(svg, "M" + arc.map(function (p) { var q = P(p); return q[0].toFixed(1) + "," + q[1].toFixed(1); }).join(" L"), "var(--accent)", 4);
+    // midpoint, E and M
+    var am = Math.PI / 2 - dr / 2, mc = [center[0] + R * Math.cos(am), center[1] + R * Math.sin(am)];
+    var chordMid = [(PC[0] + PT[0]) / 2, (PC[1] + PT[1]) / 2];
+    var mcP = P(mc), cmP = P(chordMid);
+    U.line(svg, pc[0], pc[1], pt[0], pt[1], "var(--ink-3)", 1, "2 4");
+    U.line(svg, pi[0], pi[1], mcP[0], mcP[1], "var(--warn)", 1.5);
+    U.line(svg, mcP[0], mcP[1], cmP[0], cmP[1], "var(--pass)", 1.5);
+    if (showCenter) {
+      var cc = P(center);
+      U.line(svg, cc[0], cc[1], pc[0], pc[1], "var(--ink-3)", 1, "3 3");
+      U.line(svg, cc[0], cc[1], pt[0], pt[1], "var(--ink-3)", 1, "3 3");
+      U.el(svg, "circle", { cx: cc[0], cy: cc[1], r: 3, fill: "var(--ink-2)" });
+      U.text(svg, (cc[0] + pc[0]) / 2 - 6, (cc[1] + pc[1]) / 2, "R = " + U.fmt(R, 0) + " ft", { anchor: "end", size: 13 });
+    }
+    [[pc, "PC " + C.formatStation(ce.PC)], [pt, "PT " + C.formatStation(ce.PT)], [pi, "PI " + C.formatStation(ce.PI)]].forEach(function (q) {
+      U.el(svg, "circle", { cx: q[0][0], cy: q[0][1], r: 5, fill: "var(--surface)", stroke: "var(--ink)", "stroke-width": 2 });
+      U.text(svg, q[0][0], q[0][1] - 12, isFinite(ce.PC) ? q[1] : q[1].split(" ")[0], { anchor: "middle", size: 13, cls: "t-strong" });
+    });
+    U.text(svg, (pi[0] + mcP[0]) / 2 + 8, (pi[1] + mcP[1]) / 2, "E = " + U.fmt(ce.E, 1), { size: 12, fill: "var(--warn)" });
+    U.text(svg, (mcP[0] + cmP[0]) / 2 + 8, (mcP[1] + cmP[1]) / 2 + 14, "M = " + U.fmt(ce.M, 1), { size: 12, fill: "var(--pass)" });
+    U.text(svg, (pc[0] + pi[0]) / 2, pc[1] + 20, "T = " + U.fmt(ce.T, 1) + " ft", { anchor: "middle", size: 12 });
+    U.text(svg, pi[0] + 10, pi[1] + 18, "Δ = " + d + "°", { size: 12 });
+    U.text(svg, mcP[0], mcP[1] + 28, "L = " + U.fmt(ce.L, 1) + " ft", { anchor: "middle", size: 12, fill: "var(--accent)" });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

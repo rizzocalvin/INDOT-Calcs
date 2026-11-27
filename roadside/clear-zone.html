@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clear-Zone Width</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Clear-Zone Width</h1>
+  <p class="lede">Finds the clear-zone width from Figure 49-2A for design speed, design-year AADT and side slope, applies the horizontal-curve correction factor Kcz (Figure 49-2B) and transition length (Figure 49-2C), and can average variable fill slopes (Section 49-2.02(02)).</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Roadway</legend>
+        <div class="field"><label for="V">Design speed (mph)</label><select id="V"></select></div>
+        <div class="field"><label for="aadt">Design-year AADT<small>Two-way total; directional for one-way roadways</small></label><input id="aadt" type="number" step="100" value="5000"></div>
+        <div class="field"><label for="ctx">Facility context</label>
+          <select id="ctx"><option value="std" selected>Shoulders or sloping curbs</option><option value="vc">Urban with vertical curbs</option></select></div>
+        <div class="field"><label for="pick">Value from the range</label><select id="pick"><option value="hi" selected>Upper value (conservative)</option><option value="mid">Midpoint</option><option value="lo">Lower value</option></select></div>
+      </fieldset>
+      <fieldset><legend>Side slope</legend>
+        <div class="field"><label for="mode">Slope input</label><select id="mode"><option value="col" selected>Pick slope category</option><option value="avg">Average variable fill slopes</option></select></div>
+        <div class="field"><label for="col">Slope category (Figure 49-2A)</label>
+          <select id="col"><option value="f6">Foreslope 6:1 or flatter</option><option value="f4" selected>Foreslope 5:1 or 4:1</option><option value="b3">Backslope 3:1</option><option value="b4">Backslope 4:1 or 5:1</option><option value="b6">Backslope 6:1 or flatter</option></select></div>
+        <div class="field"><label for="segs">Fill slopes from edge of travel lane<small>width@run pairs, e.g. 8@25, 10@4, 30@3 (shoulder at 4% = run 25)</small></label><input id="segs" type="text" value="8@25, 10@4, 40@3"></div>
+        <div class="field"><label for="cap">Treat slopes flatter than 10:1 as 10:1?<small>49-2.02(02)</small></label><select id="cap"><option value="yes" selected>Yes</option><option value="no">No (as in Example 49-2.2)</option></select></div>
+      </fieldset>
+      <fieldset><legend>Horizontal curve and limits</legend>
+        <div class="field"><label for="R">Curve radius (ft)<small>0 or blank = tangent</small></label><input id="R" type="number" step="10" value="1500"></div>
+        <div class="field"><label for="side">Side of curve</label><select id="side"><option value="out" selected>Outside of curve</option><option value="in">Inside of curve</option></select></div>
+        <div class="field"><label for="row">Edge of travel lane to right-of-way line (ft)<small>Optional</small></label><input id="row" type="number" step="1" placeholder="optional"></div>
+        <div class="field"><label for="obj">Offset to a fixed object (ft)<small>Optional check</small></label><input id="obj" type="number" step="1" placeholder="optional"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Clear-zone cross section</h2>
+    <svg id="dia" aria-label="Clear zone cross section"></svg>
+    <div class="cap">Cross section from the edge of travel lane, horizontal scale true, slopes drawn to their entered ratio.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <ul>
+      <li><b>Figure 49-2A</b> gives a range of clear-zone widths for new construction or reconstruction by design speed, design-year AADT and slope. It is based on the AASHTO Roadside Design Guide curves (tangent, infinite slope length, 12-ft shoulders) and is not absolute or precise; use judgment (49-2.01). It can be used with shoulders narrower than 12 ft without adjustment. The clear zone is measured from the edge of the travel lane.</li>
+      <li>The IDM examples pick different points within the range (Examples 49-2.1, 49-2.3, 49-4.1 to 49-4.3); this page lets you choose the upper, midpoint or lower value.</li>
+      <li>Asterisked values: a wider clear zone may be provided where crash history warrants; the width may be limited to 30 ft for practicality and a consistent template where experience shows satisfactory performance.</li>
+      <li>No 3:1 foreslope column is tabulated: on a 3:1 foreslope recovery is less likely, fixed objects should not be present, and recovery area at the toe should be considered (Figure 49-2A note 1).</li>
+      <li><b>Curves (49-2.02(01), Figures 49-2B, 49-2C):</b> on the outside of a curve, CZc = Kcz × CZt, interpolating on radius. Radii over 2860 ft need no adjustment per Figure 49-2B note 2 (the text of 49-2.02(01) says 3000 ft). Transition length L = 3.1V before the PC and beyond the PT. Required for new construction, reconstruction, and freeway 3R/partial 4R; otherwise a Level Two design exception. Figure 49-2B starts at 40 mph; this page uses the 40 mph column for lower speeds and flags it.</li>
+      <li><b>Slope averaging (49-2.02(02)):</b> variable fill slopes from flat to 4:1 may be averaged within the clear zone, starting at the outside edge of the travel lane; slopes flatter than 10:1 are taken as 10:1. Slopes steeper than 4:1 are non-recoverable and are not averaged; if the clear zone extends onto them, provide a clear runout area at the toe equal to the remaining clear-zone width or 12 ft, whichever is greater (49-2.03(01)). Down-then-up ditch sections cannot be averaged (use Equations 49-2.1 to 49-2.4).</li>
+      <li><b>Low speed and curbs:</b> collectors at 35 mph or less, local roads and streets: minimum 10 ft on tangent (49-2.03(02)). Urban facilities with vertical curbs: minimum 10 ft from the edge of travel lane or to the right-of-way line, whichever is less (49-2.03(03)); keep a 1.5-ft appurtenance-free area from the face of curb (2.5 ft for signal supports).</li>
+      <li>If the clear zone extends beyond the right of way, the right-of-way line is the clear-zone limit (49-2.01 item 3).</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/roadside.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "roadside", title: "Clear-Zone Width", chapters: ["49"] });
+  U.speedOptions("V", [30, 35, 40, 45, 50, 55, 60, 65, 70], 60);
+
+  function pickVal(cz, how) { return how === "lo" ? cz.lo : how === "mid" ? cz.mid : cz.hi; }
+  function parseSegs(s) {
+    return s.split(/[,;]+/).map(function (p) { var m = p.trim().match(/^([\d.]+)\s*@\s*([\d.]+)$/); return m ? { w: Number(m[1]), run: Number(m[2]) } : null; }).filter(Boolean);
+  }
+  function runToCol(run) { if (run >= 6 - 1e-9) return "f6"; if (run >= 4 - 1e-9) return "f4"; return null; }
+
+  function compute() {
+    var V = U.num("V"), aadt = U.num("aadt"), ctx = U.str("ctx"), pick = U.str("pick"), mode = U.str("mode"), col = U.str("col");
+    var R = U.num("R"), side = U.str("side"), row = U.num("row"), obj = U.num("obj"), cap = U.str("cap") === "yes";
+    var out = "", rows = [], segs = parseSegs(U.str("segs")), avgInfo = null;
+    if (ctx === "vc") {
+      var cz10 = isFinite(row) ? Math.min(10, row) : 10;
+      out += U.stats([["Clear zone", U.fmt(cz10, 1), "ft"]]);
+      out += U.msg("info", "Urban arterial, collector or local street with vertical curbs: minimum clear zone 10 ft from the edge of travel lane, or to the right-of-way line if less (49-2.03(03)). Appurtenance-free area 1.5 ft from face of curb (2.5 ft for traffic-signal supports).");
+      U.$("results").innerHTML = out; draw(cz10, cz10, [{ w: 30, run: 50 }], obj); return;
+    }
+    var cz, colUsed = col;
+    if (mode === "avg") {
+      if (!segs.length) { U.$("results").innerHTML = U.msg("warn", "Enter slope segments as width@run, e.g. 8@25, 10@4."); return; }
+      // iterate per Example 49-2.2
+      var trial = C.clearZone(V, aadt, runToCol(segs[0].run) || "f4"), czv = pickVal(trial, pick), it = [], nonrec = null;
+      for (var k = 0; k < 12; k++) {
+        var used = [], acc = 0;
+        for (var i = 0; i < segs.length && acc < czv - 1e-9; i++) {
+          if (segs[i].run < 4 - 1e-9) { nonrec = { at: acc, run: segs[i].run }; break; }
+          var w = Math.min(segs[i].w, czv - acc); used.push({ w: w, run: cap ? Math.min(segs[i].run, 10) : segs[i].run }); acc += w;
+        }
+        if (acc < czv - 1e-9 && !nonrec && segs.length) { var last = segs[segs.length - 1]; if (last.run >= 4) used.push({ w: czv - acc, run: cap ? Math.min(last.run, 10) : last.run }); }
+        var W0 = used.reduce(function (a, s) { return a + s.w; }, 0);
+        var avgRun = W0 > 0 ? W0 / used.reduce(function (a, s) { return a + s.w / s.run; }, 0) : segs[0].run;
+        var c = runToCol(avgRun) || "f4";
+        var nz = C.clearZone(V, aadt, c);
+        var nv = pickVal(nz, pick);
+        it.push({ trial: czv, avgRun: avgRun, col: c, cz: nv });
+        if (Math.abs(nv - czv) < 0.5) { czv = nv; colUsed = c; break; }
+        czv = nv; colUsed = c;
+      }
+      cz = C.clearZone(V, aadt, colUsed);
+      avgInfo = { it: it, nonrec: nonrec };
+    } else cz = C.clearZone(V, aadt, col);
+    if (!cz) { U.$("results").innerHTML = U.msg("fail", "AADT or speed outside Figure 49-2A."); return; }
+    var czt = pickVal(cz, pick);
+    var low = V <= 35 && czt < 10;
+    if (low) czt = 10;
+    rows.push(["Figure 49-2A range", cz.cell + " ft", cz.column + "; V " + cz.speedBand + " mph; AADT " + cz.aadtBand]);
+    rows.push(["Tangent clear zone, CZt", U.fmt(czt, 1) + " ft", (pick === "hi" ? "Upper" : pick === "mid" ? "Midpoint" : "Lower") + " value" + (low ? "; raised to the 10-ft minimum (49-2.03(02))" : "")]);
+    var czc = czt, kz = null;
+    if (R > 0 && side === "out") {
+      kz = C.kcz(R, V);
+      if (kz.k !== null) {
+        czc = kz.k * czt;
+        rows.push(["Curve correction factor, Kcz", kz.k.toFixed(3), "Figure 49-2B; " + kz.note]);
+        rows.push(["Curve clear zone, CZc = Kcz × CZt", U.fmt(czc, 1) + " ft", "Outside of curve, R = " + R + " ft"]);
+        if (kz.k > 1) rows.push(["Transition length, L = 3.1V", U.fmt(3.1 * V, 0) + " ft", "Figure 49-2C, before the PC and beyond the PT"]);
+      } else rows.push(["Curve correction factor, Kcz", "not tabulated", kz.note]);
+    } else if (R > 0) rows.push(["Curve correction", "None", "Kcz applies to the outside of a curve (Figure 49-2B note 1)"]);
+    var gov = czc;
+    if (isFinite(row) && row < gov) { rows.push(["Right-of-way limit", U.fmt(row, 1) + " ft", "Clear zone beyond the ROW: use the ROW line (49-2.01 item 3)"]); gov = row; }
+    rows.push(["Design clear-zone width", U.fmt(gov, 1) + " ft", "", "gov"]);
+    out += U.stats([["Range (Fig. 49-2A)", cz.cell.replace("*", "") , "ft"], ["Tangent CZt", U.fmt(czt, 1), "ft"], ["Design CZ", U.fmt(gov, 1), "ft"]]);
+    out += U.kv(rows);
+    if (cz.star) out += U.msg("info", "Asterisked value: " + IDM.road.clearZone.notes.star);
+    if (V < 40 && R > 0 && side === "out") out += U.msg("warn", "Figure 49-2B begins at 40 mph; the 40 mph factors were used for " + V + " mph.");
+    if (R > 2860 && R <= 3000 && side === "out") out += U.msg("info", "R is between 2860 and 3000 ft: Figure 49-2B needs no adjustment, though Section 49-2.02(01) text cites 3000 ft.");
+    if (avgInfo) {
+      out += "<h3 style='margin-top:14px'>Slope averaging iterations</h3>" + U.table(["Trial CZ (ft)", "Average slope", "Column", "CZ from table (ft)"], avgInfo.it.map(function (t) { return [U.fmt(t.trial, 1), U.fmt(t.avgRun, 2) + ":1", t.col, U.fmt(t.cz, 1)]; }), 0);
+      if (avgInfo.nonrec) {
+        var onSlope = gov - avgInfo.nonrec.at;
+        if (onSlope > 0) out += U.msg("warn", "A slope steeper than 4:1 (" + avgInfo.nonrec.run + ":1) begins " + U.fmt(avgInfo.nonrec.at, 1) + " ft from the edge of travel lane, inside the clear zone. It is non-recoverable and was not averaged. Provide a clear runout area at its toe at least " + U.fmt(Math.max(onSlope, 12), 1) + " ft wide (greater of the remaining clear zone or 12 ft; 49-2.03(01) item 2.c, Figure 49-2F).");
+      }
+    }
+    if (isFinite(obj)) {
+      var ok = obj >= gov - 1e-9;
+      out += U.msg(ok ? "pass" : "fail", "Fixed object at " + U.fmt(obj, 1) + " ft is " + (ok ? "outside" : "inside") + " the clear zone of " + U.fmt(gov, 1) + " ft. " + (ok ? "" : "Remove, relocate, make breakaway, or shield it (Section 49-3.0). ") + U.badge(ok, "Outside CZ", "Inside CZ"));
+    }
+    U.$("results").innerHTML = out;
+    draw(czt, gov, mode === "avg" ? segs : [{ w: gov + 15, run: col === "f6" ? 6 : col === "f4" ? 4 : 0 }], obj, col);
+  }
+
+  function draw(czt, cz, segs, obj, col) {
+    var W = 900, H = 260, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var span = Math.max(cz, obj || 0) * 1.25 + 12;
+    var x0 = 70, sc = (W - 100) / (span + 12);
+    var X = function (f) { return x0 + f * sc; };
+    var yTop = 90, pts = [[-12, 0], [0, 0]], x = 0, y = 0;
+    var cut = col && col.charAt(0) === "b";
+    segs.forEach(function (s) { if (x >= span) return; var w = Math.min(s.w, span - x); x += w; y += s.run > 0 ? (cut ? -1 : 1) * w / s.run : 0; pts.push([x, y]); });
+    if (x < span) pts.push([span, y]);
+    var ys = pts.map(function (p) { return p[1]; }), ymin = Math.min.apply(null, ys), ymax = Math.max.apply(null, ys);
+    var vs = Math.min(sc, 110 / Math.max(ymax - ymin, 1));
+    var Y = function (e) { return yTop + (e - ymin) * vs; };
+    var line = pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" ");
+    U.el(svg, "polygon", { points: line + " " + X(span) + "," + (H - 20) + " " + X(-12) + "," + (H - 20), fill: "var(--earth)", opacity: 0.3 });
+    U.el(svg, "polyline", { points: line, fill: "none", stroke: "var(--grass)", "stroke-width": 3 });
+    U.line(svg, X(-12), Y(0), X(0), Y(0), "var(--road)", 7);
+    U.line(svg, X(0), 30, X(0), H - 20, "var(--ink-3)", 1, "4 4");
+    U.text(svg, X(0) - 4, 26, "Edge of travel lane", { anchor: "end", size: 11 });
+    U.el(svg, "rect", { x: X(0), y: 40, width: cz * sc, height: 16, fill: "var(--pass-soft)", stroke: "var(--pass)" });
+    U.text(svg, X(cz / 2), 52, "Clear zone " + U.fmt(cz, 1) + " ft", { anchor: "middle", size: 12, cls: "t-strong" });
+    if (Math.abs(czt - cz) > 0.05) {
+      U.line(svg, X(czt), 60, X(czt), H - 20, "var(--ink-3)", 1, "3 3");
+      U.text(svg, X(czt) + 4, 72, "CZt " + U.fmt(czt, 1), { size: 11 });
+    }
+    U.line(svg, X(cz), 40, X(cz), H - 20, "var(--pass)", 2);
+    for (var i = 1; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1], dy = Math.abs(b[1] - a[1]);
+      if (dy > 0.01) U.text(svg, (X(a[0]) + X(b[0])) / 2, (Y(a[1]) + Y(b[1])) / 2 - 8, U.fmt((b[0] - a[0]) / dy, 1) + ":1", { anchor: "middle", size: 12 });
+    }
+    if (isFinite(obj)) {
+      U.el(svg, "rect", { x: X(obj) - 5, y: yTop - 30, width: 10, height: 40, fill: obj >= cz ? "var(--ink-3)" : "var(--fail)" });
+      U.text(svg, X(obj), yTop - 36, "Object " + U.fmt(obj, 0) + " ft", { anchor: "middle", size: 11 });
+    }
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

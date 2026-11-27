@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intersection Sight Distance</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Intersection Sight Distance</h1>
+  <p class="lede">Computes the length of the sight-triangle leg along the major road for the IDM intersection control cases (Section 46-10): stop control with a left turn, right turn or crossing; yield control; left turn from the major road; and no traffic control. Time gaps include the IDM adjustments for extra lanes, medians, approach grade and skew.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Case</legend>
+        <div class="field"><label for="cs">Control and maneuver</label>
+          <select id="cs">
+            <option value="B1" selected>Stop control: left turn from minor road (Fig. 46-10G)</option>
+            <option value="B2">Stop control: right turn from minor road (Fig. 46-10H)</option>
+            <option value="B3">Stop control: crossing the major road (Figs. 46-10H, 46-10H(1))</option>
+            <option value="C">Yield control: left or right turn (Figs. 46-10C, 46-10D)</option>
+            <option value="F">Left turn from the major road (Figs. 46-10I, 46-10J)</option>
+            <option value="A">No traffic control (Figs. 46-10A, 46-10B; not State highways)</option>
+          </select></div>
+        <div class="field"><label for="ycase">Yield: turn direction</label><select id="ycase"><option value="left">Left</option><option value="right">Right</option></select></div>
+        <div class="field"><label for="V">Major-road design speed</label><select id="V"></select></div>
+        <div class="field"><label for="veh">Design vehicle</label><select id="veh"><option value="P">Passenger car</option><option value="SU">Single-unit truck</option><option value="CT">Combination truck</option></select></div>
+        <div class="field"><label for="cls">Major-road class<small>Fig. 46-10G passenger-car gaps differ</small></label><select id="cls"><option value="collart" selected>Collector or arterial</option><option value="local">Local road</option></select></div>
+        <div class="field"><label for="scope">Project scope<small>Decision point, 46-10.03(01)</small></label><select id="scope"><option value="4r">New / reconstruction: 18 ft</option><option value="3r">3R: 14.5 ft</option></select></div>
+      </fieldset>
+      <fieldset><legend>Adjustments</legend>
+        <div class="field"><label for="lanes">Lanes to be crossed<small>Left turn: lanes from the left. Crossing: all lanes. Major left: opposing lanes.</small></label><input id="lanes" type="number" min="1" step="1" value="1"></div>
+        <div class="field"><label for="med">Narrow median (cannot store design vehicle)?</label><select id="med"><option value="0">No</option><option value="1">Yes</option></select></div>
+        <div class="field"><label for="g">Minor-road approach grade (%)<small>+ = upgrade leaving the minor road</small></label><input id="g" type="number" step="0.5" value="0"></div>
+        <div class="field"><label for="skew">Intersection angle (degrees)<small>90 = right angle</small></label><input id="skew" type="number" step="1" value="90"></div>
+        <div class="field"><label for="lw">Lane width (ft)</label><input id="lw" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="avail">Available sight distance along major road (ft)<small>Optional check</small></label><input id="avail" type="number" step="1" placeholder="optional"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Sight triangle</h2>
+    <svg id="dia" aria-label="Intersection sight triangle plan"></svg>
+    <div class="cap">Plan view, not to scale. Leg a is measured along the minor road from the edge of the major-road travel lane to the decision point; leg b is the ISD along the major road (Figure 46-10F). Keep the shaded triangles clear of sight obstructions.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <div class="eq">ISD = 1.47 Vmajor tg &nbsp;&nbsp; (Figure 46-10G)</div>
+    <ul>
+      <li>Eye height 3.5 ft (passenger car) or 7.6 ft (truck); object height 3.5 ft (46-10.0). The ground under the sight line, not the centerline profile, governs.</li>
+      <li><b>Stop control, left turn (46-10.03(01), Figure 46-10G):</b> check at least the passenger car and single-unit truck. INDOT uses tg = 7.5 s for a passenger car on a local road; on collectors and arterials the passenger-car gap rises from 7.5 s at 45 mph to 10.0 s at 65 to 70 mph. Add 0.5 s (car) or 0.7 s (truck) per additional lane from the left in excess of one; add 0.2 s per percent of minor-road upgrade steeper than 3% when the rear wheels are on the upgrade.</li>
+      <li><b>Right turn and crossing (Figures 46-10H, 46-10H(1)):</b> tg = 6.5 s (car), 8.5 s (SU), 10.5 s (combination). Crossing more than two lanes adds 0.5 s (car) or 0.7 s (truck) per additional lane or narrow median; add 0.1 s per percent of upgrade steeper than 3%. The IDM tabulates the right-turn ISD for passenger cars only; this page uses the Figure 46-10H(1) gaps for trucks turning right and applies no lane adjustment to right turns.</li>
+      <li><b>Yield control (46-10.02):</b> the minor-road leg is 80 ft (turning speed 10 mph). tg is the stop-control value plus 0.5 s: 8, 10, 12 s (Figure 46-10C); multilane left turns add 0.5/0.7 s per additional lane. Figure 46-10D gives passenger-car values to 55 mph.</li>
+      <li><b>Left turn from the major road (46-10.04, Figures 46-10I, 46-10J):</b> tg = 5.5, 6.5, 7.5 s; add 0.5/0.7 s per additional opposing lane and for a narrow median.</li>
+      <li><b>No traffic control (46-10.01):</b> Figure 46-10A with the Figure 46-10B grade factor; not applicable to State highways.</li>
+      <li><b>Skew (46-10.06):</b> where the angle is less than 60°, path lengths increase. If the crossing path (lane widths ÷ sin angle) exceeds the lane widths by 12 ft or more, add lanes in the adjustment.</li>
+      <li>Where no adjustment applies, the tabulated (rounded) IDM value is the design value; otherwise the calculated value is shown. The IDM tables round inconsistently (e.g., 1.47 × 50 × 8.5 = 624.8 ft is printed as 630 ft).</li>
+      <li>If ISD cannot be provided, see the measures in 46-10.03(02) (relocate the drive, flare guardrail, revise grades, remove obstructions, etc.) and consider advance intersection warning signs with advisory speed plates.</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/intersections.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "intersections", title: "Intersection Sight Distance", chapters: ["46"] });
+  U.speedOptions("V", [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70], 55);
+
+  function compute() {
+    var cs = U.str("cs"), V = U.num("V"), veh = U.str("veh"), cls = U.str("cls"), scope = U.str("scope");
+    var lanes = Math.max(1, U.num("lanes") || 1), med = Number(U.str("med")), g = U.num("g") || 0, ang = U.num("skew"), lw = U.num("lw") || 12, avail = U.num("avail");
+    var out = "", r = null, a = scope === "3r" ? 14.5 : 18, rows = [], fig = "";
+    // skew-based extra lanes
+    var crossedW = lanes * lw;
+    var sk = C.skewExtraLanes(crossedW, isFinite(ang) ? ang : 90);
+    var skewExtra = (cs === "B1" || cs === "B3" || cs === "C" || cs === "F") ? sk.extra : 0;
+
+    if (cs === "B1") {
+      r = C.isdStopLeft(V, { vehicle: veh, cls: cls, extraLanes: (lanes - 1) + med + skewExtra, gradeUp: g });
+      fig = "Figure 46-10G";
+      if (med) out += U.msg("info", "A narrow median is counted as an additional lane (convert median width to an equivalent number of lanes, 46-10.03(01)).");
+    } else if (cs === "B2" || cs === "B3") {
+      r = C.isdStopRightCross(V, { maneuver: cs === "B2" ? "right" : "cross", vehicle: veh, extraLanes: Math.max(0, lanes - 2) + med + skewExtra, gradeUp: g });
+      fig = cs === "B2" ? "Figures 46-10H, 46-10H(1)" : "Figure 46-10H(1)";
+    } else if (cs === "C") {
+      var turn = U.str("ycase");
+      r = C.isdYield(V, { vehicle: veh, turn: turn, extraLanes: (lanes - 1) + med + skewExtra });
+      fig = "Figures 46-10C, 46-10D"; a = IDM.int.yieldGap.minorLeg;
+      if (g > 3) out += U.msg("info", "The IDM gives no grade adjustment for yield control.");
+    } else if (cs === "F") {
+      r = C.isdMajorLeft(V, { vehicle: veh, extraLanes: (lanes - 1) + med + skewExtra });
+      fig = "Figures 46-10I, 46-10J"; a = null;
+      if (g > 3) { r.tg += 0.1 * g; r.calc = 1.47 * V * r.tg; r.design = r.calc; r.adjusted = true; r.addGrade = 0.1 * g; }
+    } else {
+      var nc = C.isdNoControl(V, g);
+      if (!nc) { U.$("results").innerHTML = U.msg("fail", "Figure 46-10A tabulates 10, 20, 25, 30, 40, 45, 50, 55 and 60 mph only."); U.svg("dia", 10, 10); return; }
+      out += U.stats([["Leg along this approach", U.fmt(nc.isd, 0), "ft"]]);
+      out += U.kv([["Figure 46-10A distance", nc.base + " ft", "Approach grades −3% to +3%"], ["Grade factor (" + nc.gradeRow + "% row)", nc.factor.toFixed(1), "Figure 46-10B"], ["Design leg", U.fmt(nc.isd, 0) + " ft", "", "gov"]]);
+      out += U.msg("warn", "Figure 46-10A is not applicable to State highways. Compute each approach's leg with its own speed; if the sight distance cannot be provided, consider stop signs on one or more approaches.");
+      U.$("results").innerHTML = out; draw(nc.isd, nc.isd, cs); return;
+    }
+    if (!r) { U.$("results").innerHTML = U.msg("fail", "Design speed not tabulated."); return; }
+    var design = r.design;
+    out = U.stats([["Time gap, tg", U.fmt(r.tg, 2), "s"], ["ISD (leg b)", U.fmt(design, 0), "ft"], ["Leg a", a !== null ? U.fmt(a, 1) : "n/a", a !== null ? "ft" : ""]]) + out;
+    rows.push(["Base time gap", r.base + " s", fig]);
+    if (r.addLanes) rows.push(["Additional lanes / median", "+" + U.fmt(r.addLanes, 2) + " s", (veh === "P" ? "0.5 s" : "0.7 s") + " per lane" + (skewExtra ? " (includes " + skewExtra + " for skew)" : "")]);
+    if (r.addGrade) rows.push(["Minor-road upgrade " + g + "%", "+" + U.fmt(r.addGrade, 2) + " s", cs === "B1" ? "0.2 s per % (grade > 3%)" : "0.1 s per % (grade > 3%)"]);
+    rows.push(["Calculated ISD = 1.47 × " + V + " × " + U.fmt(r.tg, 2), U.fmt(r.calc, 1) + " ft", ""]);
+    if (r.table !== null && r.table !== undefined) rows.push(["Tabulated IDM value (no adjustments)", r.table + " ft", fig]);
+    rows.push(["Design ISD", U.fmt(design, r.adjusted ? 1 : 0) + " ft", r.adjusted ? "Calculated (adjusted time gap)" : "Tabulated value", "gov"]);
+    out += U.kv(rows);
+    if (ang < 90 && isFinite(ang)) out += U.msg(ang < 60 ? "warn" : "info", "Skew " + ang + "°: crossing path " + U.fmt(sk.path, 1) + " ft vs lane widths " + U.fmt(crossedW, 1) + " ft (excess " + U.fmt(sk.excess, 1) + " ft) → " + sk.extra + " extra lane(s) applied." + (ang < 60 ? " Angle below 60°: the sight triangles lie along the approach legs (Figure 46-10K) and drivers in the acute quadrant must turn their heads considerably; consider realignment." : ""));
+    if ((cs === "B1" || cs === "B2") && veh === "P") out += U.msg("info", "Also check the single-unit truck (46-10.03(01)); consider the combination truck where substantial heavy vehicles enter the major road.");
+    if (cs === "B1" && r.table === null) out += U.msg("warn", "Design speed not tabulated in Figure 46-10G.");
+    if (isFinite(avail)) {
+      var ok = avail >= design - 1e-9;
+      out += U.msg(ok ? "pass" : "fail", "Available " + U.fmt(avail, 0) + " ft " + (ok ? "meets" : "is less than") + " the design ISD of " + U.fmt(design, 0) + " ft. " + U.badge(ok, "ISD met", "ISD not met"));
+    }
+    if (cs === "C") out += U.msg("info", "A yield-controlled approach also needs the stop-control departure triangle, but because the yield approach triangle is larger, no separate check is needed (46-10.02(02)).");
+    U.$("results").innerHTML = out;
+    draw(a, design, cs);
+  }
+
+  function draw(a, b, cs) {
+    var W = 900, H = 380, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var cx = W / 2, ry = 150, rw = 48; // major road band (2 lanes)
+    var scale = Math.min((W / 2 - 60) / Math.max(b, 1), 1.2);
+    U.el(svg, "rect", { x: 0, y: ry - rw / 2, width: W, height: rw, fill: "var(--road)" });
+    U.line(svg, 0, ry, W, ry, "var(--mark)", 2, "18 12");
+    if (cs !== "F") {
+      U.el(svg, "rect", { x: cx - 22, y: ry + rw / 2, width: 44, height: H - ry - rw / 2, fill: "var(--road)" });
+      U.line(svg, cx, ry + rw / 2, cx, H, "var(--mark)", 2, "12 10");
+    }
+    var bpx = b * scale;
+    if (cs === "F") {
+      // left-turning vehicle on major road, opposing traffic from the right... draw sight line along opposing direction
+      var vx = cx - 40, vy = ry + 12;
+      U.el(svg, "rect", { x: vx - 20, y: vy - 7, width: 26, height: 14, rx: 3, fill: "var(--accent)" });
+      U.el(svg, "rect", { x: Math.min(W - 40, vx + bpx) - 10, y: ry - 19, width: 26, height: 14, rx: 3, fill: "var(--warn)" });
+      U.line(svg, vx, vy, Math.min(W - 40, vx + bpx), ry - 12, "var(--sight)", 2, "6 4");
+      U.dim(svg, vx, ry - rw / 2 - 20, Math.min(W - 40, vx + bpx), ry - rw / 2 - 20, "ISD = " + U.fmt(b, 0) + " ft", { size: 13 });
+      U.text(svg, vx - 10, vy + 28, "Left-turning vehicle (stopped)", { size: 12 });
+      U.text(svg, Math.min(W - 40, vx + bpx), ry - 30, "Opposing vehicle", { anchor: "end", size: 12 });
+      return;
+    }
+    var apx = (a || 18) * Math.max(scale, 1.4);
+    var dpL = [cx - 11, ry + rw / 2 + apx], dpR = [cx + 11, ry + rw / 2 + apx];
+    // left triangle: traffic from left in near lane (y = ry + rw/4)
+    var nearY = ry + rw / 4, farY = ry - rw / 4;
+    var bl = Math.max(40, cx - bpx), br = Math.min(W - 10, cx + bpx);
+    U.el(svg, "polygon", { points: [dpL[0], dpL[1], bl, nearY, cx - 11, nearY].join(" ").replace(/ (?=[\d.]+ )/g, " "), fill: "var(--sight)", opacity: 0.22, stroke: "var(--sight)" });
+    U.el(svg, "polygon", { points: [dpR[0], dpR[1], br, farY, cx + 11, farY].join(" "), fill: "var(--sight)", opacity: 0.22, stroke: "var(--sight)" });
+    U.el(svg, "circle", { cx: dpL[0], cy: dpL[1], r: 5, fill: "var(--ink)" });
+    U.el(svg, "circle", { cx: dpR[0], cy: dpR[1], r: 5, fill: "var(--ink)" });
+    U.text(svg, cx + 30, dpR[1] + 4, "Decision point", { size: 12 });
+    U.dim(svg, cx - 40, ry + rw / 2, cx - 40, dpL[1], "", {});
+    U.text(svg, cx - 46, (ry + rw / 2 + dpL[1]) / 2 + 4, "a = " + (a ? U.fmt(a, 1) : "") + " ft", { anchor: "end", size: 12, fill: "var(--dim)" });
+    U.dim(svg, bl, ry - rw / 2 - 16, cx, ry - rw / 2 - 16, "b = " + U.fmt(b, 0) + " ft (from left)", { size: 12 });
+    U.dim(svg, cx, ry - rw / 2 - 42, br, ry - rw / 2 - 42, "b = " + U.fmt(b, 0) + " ft (from right)", { size: 12 });
+    U.el(svg, "rect", { x: bl - 10, y: nearY - 7, width: 26, height: 14, rx: 3, fill: "var(--warn)" });
+    U.el(svg, "rect", { x: br - 16, y: farY - 7, width: 26, height: 14, rx: 3, fill: "var(--warn)" });
+    U.text(svg, 10, H - 12, "Major road (free flow)  /  minor road approach (" + (cs === "C" ? "yield" : "stop") + " control)", { size: 11 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

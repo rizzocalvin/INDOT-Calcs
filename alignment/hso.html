@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Horizontal Sight-Line Offset</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Horizontal Sight-Line Offset (HSO)</h1>
+  <p class="lede">Computes the clear distance needed on the inside of a horizontal curve so that the design sight distance is available (Equation 305-5.1), and checks an existing obstruction offset.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Sight distance</legend>
+        <div class="field"><label for="V">Design speed, V</label><select id="V"></select></div>
+        <div class="field"><label for="stype">Sight distance criterion<small>305-5.02</small></label>
+          <select id="stype">
+            <option value="ssd" selected>Stopping sight distance (Fig. 42-1A)</option>
+            <option value="A">DSD maneuver A (Fig. 42-2A)</option>
+            <option value="B">DSD maneuver B</option>
+            <option value="C">DSD maneuver C</option>
+            <option value="D">DSD maneuver D</option>
+            <option value="E">DSD maneuver E</option>
+            <option value="custom">Enter my own S</option>
+          </select></div>
+        <div class="field"><label for="scust">Custom S (ft)</label><input id="scust" type="number" value="600"></div>
+      </fieldset>
+      <fieldset><legend>Curve</legend>
+        <div class="field"><label for="Rcl">Radius of roadway centerline (ft)</label><input id="Rcl" type="number" value="1500"></div>
+        <div class="field"><label for="off">Centerline to center of inside lane (ft)<small>2-lane, 12-ft lanes: 6 ft</small></label><input id="off" type="number" step="0.5" value="0"></div>
+        <div class="field"><label for="L">Length of curve, L (ft)</label><input id="L" type="number" value="900"></div>
+      </fieldset>
+      <fieldset><legend>Check (optional)</legend>
+        <div class="field"><label for="obs">Offset from center of inside lane to obstruction (ft)</label><input id="obs" type="number" placeholder="e.g. 30"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Plan view of horizontal sight line offset"></svg>
+    <div class="cap">Plan view. The sight line is a chord of length S along the inside-lane path; HSO is its middle ordinate. Entering and exiting clearance connects to the outside edge of shoulder S/2 before the PC and beyond the PT (305-5.03(01)); shown schematically.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <div class="eq">HSO = R [1 − cos(28.65 S / R)] &nbsp;&nbsp; (Equation 305-5.1, angle in degrees)</div>
+    <ul>
+      <li>HSO is measured from the center of the inside travel lane to the obstruction; R is the radius to the center of the inside travel lane; S is the design sight distance (305-5.03).</li>
+      <li>Passenger car: eye 3.5 ft, object 2 ft, both at the center of the inside lane. For ramps with lanes wider than 12 ft, place eye and object 6 ft from the inside lane edge (305-5.02).</li>
+      <li>The equation applies where L &gt; S, from PC to PT. Where L ≤ S, check sight distance graphically, including the area from S/2 before the PC to S/2 beyond the PT (305-5.03 item 2 and 305-5.03(01)).</li>
+      <li>Sight obstructions include guardrail, bridge railing, median barrier, walls, cut slopes, wooded areas, buildings, tall crops, and the right-of-way line. Point obstacles such as a sign or utility pole are not sight obstructions (305-5.01).</li>
+      <li>Shoulders should not be widened beyond 12 ft solely to meet HSO (305-5.01).</li>
+      <li>The calculation is plan view only. A three-dimensional evaluation is recommended for compound curves, overlapping horizontal and vertical curves, and barriers within the HSO (305-5.03(02)). NCHRP Report 910 is recommended for assessing restrictions (305-5.04).</li>
+    </ul>
+    <p>Check: IDM Figure 305-5B (V = 60 mph, R = 1500 ft, L = 900 ft, S = 570 ft) gives HSO = 27 ft. Set the centerline-to-lane offset to 0 to reproduce it.</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/sight-distance.js"></script>
+<script src="../data/horizontal.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "alignment", title: "Horizontal Sight-Line Offset", chapters: ["305", "42"] });
+  U.speedOptions("V", IDM.sight.ssd.table.map(function (r) { return r[0]; }), 60);
+
+  function compute() {
+    var V = U.num("V"), st = U.str("stype"), Rcl = U.num("Rcl"), off = U.num("off") || 0, L = U.num("L"), obs = U.num("obs");
+    var S, sLabel;
+    if (st === "ssd") { S = C.ssd(V).design; sLabel = "SSD, Figure 42-1A"; }
+    else if (st === "custom") { S = U.num("scust"); sLabel = "Your input"; }
+    else { S = C.dsd(V, st); sLabel = "DSD maneuver " + st + ", Figure 42-2A"; }
+    if (!S) { U.$("results").innerHTML = U.msg("fail", "Decision sight distance is not tabulated below 30 mph (Figure 42-2A)."); U.svg("dia", 10, 10); return; }
+    var R = Rcl - off;
+    if (!(R > 0)) { U.$("results").innerHTML = U.msg("fail", "Enter a positive radius."); return; }
+    var angle = 28.65 * S / R;
+    var hso = C.hso(R, S);
+    var LgtS = L > S;
+    var out = U.stats([["Sight distance, S", U.fmt(S, 0), "ft"], ["HSO required", U.fmt(hso, 1), "ft"], ["R (inside lane)", U.fmt(R, 0), "ft"]]);
+    var rows = [
+      ["Design sight distance, S", U.fmt(S, 0) + " ft", sLabel],
+      ["Radius to center of inside lane, R", U.fmt(R, 1) + " ft", "Centerline R − " + off + " ft"],
+      ["28.65 S / R", U.fmt(angle, 3) + "°", "Half the central angle subtended by S"],
+      ["HSO = R[1 − cos(28.65 S/R)]", U.fmt(hso, 2) + " ft", "Eq. 305-5.1", "gov"]
+    ];
+    if (angle >= 90) rows.push(["Note", "S exceeds the half-circumference", "Equation not meaningful"]);
+    out += U.kv(rows);
+    if (isFinite(L)) {
+      out += LgtS ? U.msg("pass", "L = " + U.fmt(L, 0) + " ft > S = " + S + " ft: Equation 305-5.1 applies from PC to PT, with straight-line clearance to the outside edge of shoulder S/2 = " + U.fmt(S / 2, 0) + " ft before the PC and beyond the PT.")
+                  : U.msg("warn", "L = " + U.fmt(L, 0) + " ft ≤ S = " + S + " ft: check sight distance graphically, including S/2 before the PC and beyond the PT (305-5.03). The equation value above overstates the clearance needed.");
+    }
+    if (isFinite(obs)) {
+      var sAvail = C.hsoSight(R, obs);
+      var ok = obs >= hso;
+      out += U.msg(ok ? "pass" : "fail", "Obstruction at " + U.fmt(obs, 1) + " ft " + (ok ? "is outside" : "is inside") + " the required HSO of " + U.fmt(hso, 1) + " ft. Sight distance available ≈ " + U.fmt(sAvail, 0) + " ft (Eq. 305-5.1 solved for S, L > S). " + U.badge(ok, "Sight distance met", "Not met"));
+      if (!ok) out += U.msg("info", "Section 305-5.04: evaluate relocating the obstruction, revising the alignment, or a design exception. SSD is a Level One design-exception criterion.");
+    }
+    U.$("results").innerHTML = out;
+    draw(R, S, hso, L, obs, off);
+  }
+
+  function draw(R, S, hso, L, obs, off) {
+    var W = 900, H = 340, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var half = Math.min(S / R / 2, 1.2);
+    var curveHalf = isFinite(L) ? Math.min(L / R / 2, 1.4) : half * 1.4;
+    var span = Math.max(curveHalf, half) * 1.15;
+    // center below; arc of inside lane at radius R
+    var chordW = 2 * R * Math.sin(span);
+    var depth = R * (1 - Math.cos(span)) + Math.max(hso, obs || 0) + 30;
+    // separate horizontal and vertical scales (vertical exaggerated so HSO is visible)
+    var sx = (W - 100) / chordW, sy = Math.min((H - 120) / depth, sx * 12);
+    var sc = sy, cx = W / 2;
+    function pt(r, a) { return [cx + r * Math.sin(a) * sx, 70 + (R - r * Math.cos(a)) * sy]; }
+    function arcPath(r, a0, a1) {
+      var d = "", n = 80;
+      for (var i = 0; i <= n; i++) { var a = a0 + (a1 - a0) * i / n, p = pt(r, a); d += (i ? " L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1); }
+      return d;
+    }
+    var laneW = 12;
+    // roadway (inside lane centered on R) - draw two lanes
+    var rIn = R - laneW / 2, rOut = R + laneW / 2 + laneW;
+    U.path(svg, arcPath(R + laneW / 2, -span, span), "var(--road)", Math.min(Math.max(laneW * 2 * sc, 6), 60));
+    U.path(svg, arcPath(R + laneW / 2, -span, span), "var(--mark)", 1.5, "none", "10 8");
+    U.path(svg, arcPath(R, -span, span), "var(--ink-3)", 1, "none", "2 4");
+    // curve limits PC/PT
+    if (isFinite(L)) {
+      [-L / R / 2, L / R / 2].forEach(function (a, i) {
+        if (Math.abs(a) > span) return;
+        var p1 = pt(R - 20, a), p2 = pt(R + 30, a);
+        U.line(svg, p1[0], p1[1], p2[0], p2[1], "var(--ink)", 1.5);
+        U.text(svg, p2[0], p2[1] - 6, i ? "PT" : "PC", { anchor: "middle", size: 12, cls: "t-strong" });
+      });
+    }
+    // sight line chord
+    var e1 = pt(R, -half), e2 = pt(R, half);
+    U.line(svg, e1[0], e1[1], e2[0], e2[1], "var(--sight)", 2, "6 4");
+    U.el(svg, "circle", { cx: e1[0], cy: e1[1], r: 4, fill: "var(--sight)" });
+    U.el(svg, "rect", { x: e2[0] - 4, y: e2[1] - 4, width: 8, height: 8, fill: "var(--fail)" });
+    U.text(svg, e1[0] - 8, e1[1] + 16, "Eye", { anchor: "end", size: 12 });
+    U.text(svg, e2[0] + 8, e2[1] + 16, "Object", { size: 12 });
+    var top = pt(R, 0), mid = [cx, (e1[1] + e2[1]) / 2];
+    U.dim(svg, top[0], top[1], mid[0], mid[1], "", {});
+    U.text(svg, top[0] + 8, (top[1] + mid[1]) / 2 + 4, "HSO = " + U.fmt(hso, 1) + " ft", { size: 13, fill: "var(--dim)", cls: "t-strong" });
+    U.text(svg, (e1[0] + e2[0]) / 2, mid[1] + 18, "S = " + U.fmt(S, 0) + " ft (along inside lane)", { anchor: "middle", size: 12, fill: "var(--sight)" });
+    // clear area boundary at HSO (offset arc)
+    U.path(svg, arcPath(R - hso, -half, half), "var(--pass)", 1.5, "none", "8 4");
+    if (isFinite(obs)) {
+      U.path(svg, arcPath(R - obs, -span, span), obs >= hso ? "var(--pass)" : "var(--fail)", 3);
+      var po = pt(R - obs, span * 0.8);
+      U.text(svg, po[0], po[1] + 16, "Obstruction (" + U.fmt(obs, 0) + " ft)", { anchor: "middle", size: 12, fill: obs >= hso ? "var(--pass)" : "var(--fail)" });
+    }
+    U.text(svg, 20, H - 14, "Inside of curve is toward the bottom. Vertical (radial) scale exaggerated " + (sy / sx).toFixed(1) + "x.", { size: 11 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

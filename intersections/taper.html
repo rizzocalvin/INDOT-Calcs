@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taper Lengths</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Taper Lengths</h1>
+  <p class="lede">Computes merging (lane-drop) and lane-shift taper lengths from the IDM longitudinal taper rates (Figure 502-2J), the lane-drop taper and acceleration distance for an added through lane at an intersection (Figure 46-7A), and lists the fixed taper lengths the IDM uses for turn lanes, TWLTL transitions and downstream recovery.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Merging or shifting taper (Figure 502-2J)</legend>
+        <div class="field"><label for="V">Design speed</label><select id="V"></select></div>
+        <div class="field"><label for="type">Taper type</label><select id="type"><option value="merge" selected>Merging taper (lane drop)</option><option value="shift">Lane-shift taper</option></select></div>
+        <div class="field"><label for="off">Lateral offset distance (ft)<small>Lane width for a lane drop</small></label><input id="off" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="nl">Lanes for downstream recovery taper</label><input id="nl" type="number" step="1" min="1" value="1"></div>
+      </fieldset>
+      <fieldset><legend>Added through lane at an intersection (Figure 46-7A)</legend>
+        <div class="field"><label for="V2">Design speed</label><select id="V2"></select></div>
+        <div class="field"><label for="w2">Lane width dropped (ft)</label><input id="w2" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="urb">Urban area?<small>Sharper taper allowed, min. 300 ft</small></label><select id="urb"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Taper plan view"></svg>
+    <div class="cap">Plan view; longitudinal and lateral scales differ so the taper is visible.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>Figure 502-2J, Longitudinal Taper Rate and Length (Rev. Aug. 2018)</h3>
+    <div class="eq">L = merging taper rate × offset distance</div>
+    <ul>
+      <li>Merging taper rates: 10:1 (20–25 mph), 15:1 (30), 20:1 (35), 30:1 (40), 45:1 (45), and V:1 from 50 to 70 mph.</li>
+      <li>Merging taper (lane drop) and lane-shift taper: L as above. Two-way left-turn lane transition taper: 100 ft. Downstream recovery taper: 50 ft per lane (desirable 100 ft per lane).</li>
+      <li>Section 502-2.02(10): Figure 502-2J gives the minimum taper rate and length for lane reductions; the edge-line taper rate applies across a bridge.</li>
+    </ul>
+    <h3>Figure 46-7A, Extension of Additional Through Lanes</h3>
+    <p>For an added through lane carried through a signalized intersection, DE is the distance to accelerate from a stop to 6 mph below the average running speed (increase where driveways are present); the lane-drop taper follows. Sharper tapers may be used in urban areas but should be at least 300 ft. These are preliminary-design criteria; final design is case by case.</p>
+    <h3>Turn lanes and acceleration lanes (Chapter 46)</h3>
+    <ul>
+      <li>Turn-lane entrance taper: 100-ft straight-line taper for a single turn lane, 150 ft for dual turn lanes on an urban street; on a curve, constant divergence, at least 50 ft (46-4.02(02)).</li>
+      <li>End of a parallel acceleration lane: 300-ft taper (46-6.03). Turn-lane extension on a 2-lane highway: 300-ft tapered acceleration lane, not less than 200 ft under restricted conditions (46-4.02(05)).</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/intersections.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "intersections", title: "Taper Lengths", chapters: ["502", "46"] });
+  U.speedOptions("V", IDM.taper502.rates.map(function (r) { return r[0]; }), 45);
+  U.speedOptions("V2", IDM.int.throughLaneExt.table.map(function (r) { return r[0]; }), 45);
+
+  function compute() {
+    var V = U.num("V"), off = U.num("off"), nl = U.num("nl") || 1, type = U.str("type");
+    var rate = C.taperRate(V), L = rate * off;
+    var out = U.stats([["Taper rate", rate + ":1", ""], [type === "merge" ? "Merging taper" : "Lane-shift taper", U.fmt(L, 0), "ft"]]);
+    out += U.kv([
+      ["Taper rate at " + V + " mph", rate + ":1", "Figure 502-2J"],
+      [(type === "merge" ? "Merging taper" : "Lane-shift taper") + " = " + rate + " × " + U.fmt(off, 1), U.fmt(L, 1) + " ft", "Figure 502-2J note 1", "gov"],
+      ["Downstream recovery taper", 50 * nl + " ft minimum, " + 100 * nl + " ft desirable", "Figure 502-2J: 50 ft/lane (desirable 100 ft/lane)"],
+      ["TWLTL transition taper", "100 ft", "Figure 502-2J"],
+      ["Turn-lane entrance taper", "100 ft single / 150 ft dual (urban)", "46-4.02(02)"]
+    ]);
+    var V2 = U.num("V2"), w2 = U.num("w2"), urb = U.str("urb") === "yes";
+    var r = C.rowBySpeed(IDM.int.throughLaneExt.table, V2);
+    if (r) {
+      var Ld = r[2] * w2;
+      out += "<h3 style='margin-top:14px'>Added through lane (Figure 46-7A)</h3>" + U.kv([
+        ["Acceleration distance DE (minimum)", r[1] + " ft", "Stop to 6 mph below running speed"],
+        ["Lane-drop taper rate", r[2] + ":1", "Figure 46-7A"],
+        ["Lane-drop taper length", U.fmt(Ld, 0) + " ft" + (urb ? " (urban: sharper allowed, ≥ 300 ft)" : ""), r[2] + " × " + w2 + " ft", "gov"],
+        ["Downstream lane + taper", U.fmt(r[1] + Ld, 0) + " ft", "DE + taper (preliminary design)"]
+      ]);
+      if (urb && Ld < 300) out += U.msg("info", "Urban taper shown is under 300 ft; Figure 46-7A note 3 sets 300 ft as the minimum for sharper urban tapers.");
+      var r502 = C.taperRate(V2);
+      if (r502 && r502 !== r[2]) out += U.msg("info", "Figure 46-7A uses " + r[2] + ":1 at " + V2 + " mph while Figure 502-2J uses " + r502 + ":1; the two IDM figures differ, so confirm which governs for your project.");
+    }
+    U.$("results").innerHTML = out;
+    draw(L, off, rate, type);
+  }
+
+  function draw(L, off, rate, type) {
+    var W = 900, H = 220, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var lane = 12, x0 = 60, xt = 260, sc = (W - 120 - (xt - x0)) / Math.max(L * 1.3, 1);
+    var vs = 3; // px per ft lateral
+    var y0 = 80;
+    var xe = xt + L * sc;
+    U.el(svg, "rect", { x: 0, y: y0, width: W, height: lane * vs, fill: "var(--road)" });
+    if (type === "merge") {
+      U.el(svg, "polygon", { points: [0, y0 + lane * vs, xt, y0 + lane * vs, xe, y0 + lane * vs, xt, y0 + lane * vs + off * vs, 0, y0 + lane * vs + off * vs].join(" "), fill: "var(--road)" });
+      U.el(svg, "polygon", { points: [xt, y0 + lane * vs + off * vs, xe, y0 + lane * vs, xt, y0 + lane * vs].join(" "), fill: "var(--road-2)" });
+      U.line(svg, 0, y0 + lane * vs, xt, y0 + lane * vs, "var(--surface)", 2, "14 10");
+    } else {
+      U.el(svg, "polygon", { points: [xt, y0, xe, y0 + off * vs, W, y0 + off * vs, W, y0 + lane * vs + off * vs, xe, y0 + lane * vs + off * vs, xt, y0 + lane * vs].join(" "), fill: "var(--road)" });
+      U.el(svg, "rect", { x: xt, y: y0, width: W - xt, height: lane * vs, fill: "var(--bg)" });
+      U.el(svg, "polygon", { points: [xt, y0, xe, y0 + off * vs, W, y0 + off * vs, W, y0 + lane * vs + off * vs, xe, y0 + lane * vs + off * vs, xt, y0 + lane * vs].join(" "), fill: "var(--road)" });
+    }
+    U.line(svg, xt, 40, xt, H - 30, "var(--ink-3)", 1, "4 4");
+    U.line(svg, xe, 40, xe, H - 30, "var(--ink-3)", 1, "4 4");
+    U.dim(svg, xt, H - 24, xe, H - 24, "L = " + U.fmt(L, 0) + " ft (" + rate + ":1)", { dy: -6, size: 13 });
+    U.text(svg, 20, 30, "Traffic →", { size: 12 });
+    U.text(svg, xt + 6, 56, "offset " + U.fmt(off, 1) + " ft", { size: 12 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

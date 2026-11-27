@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barrier Flare Rates</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Barrier Flare Rates</h1>
+  <p class="lede">Finds the maximum barrier flare rate from Figure 49-4F for a barrier inside or outside the shy line, and the minimum flare length to move a barrier between two lateral offsets. Optionally checks a proposed flare.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Barrier</legend>
+        <div class="field"><label for="V">Design speed</label><select id="V"></select></div>
+        <div class="field"><label for="bt">Barrier type</label><select id="bt"><option value="gr" selected>Guardrail (semi-rigid)</option><option value="cb">Concrete barrier (rigid)</option></select></div>
+        <div class="field"><label for="o1">Offset at start of flare, from ETL (ft)<small>Near (downstream) end</small></label><input id="o1" type="number" step="0.5" value="8"></div>
+        <div class="field"><label for="o2">Offset at end of flare, from ETL (ft)<small>Far (upstream) end</small></label><input id="o2" type="number" step="0.5" value="14"></div>
+        <div class="field"><label for="Lp">Proposed flare length (ft)<small>Optional check</small></label><input id="Lp" type="number" step="5" placeholder="optional"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Flared barrier</h2>
+    <svg id="dia" aria-label="Flared barrier plan"></svg>
+    <div class="cap">Plan view; lateral scale exaggerated. The portion of the barrier inside the shy line uses the "inside shy line" rate.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <ul>
+      <li>Figure 49-4F gives flare rates a:b relative to the shy line: inside the shy line 13:1 (30 mph) to 30:1 (65 mph) for all barriers; outside the shy line 8:1 to 20:1 for concrete barrier and 7:1 to 15:1 for guardrail. Flatter flares are acceptable.</li>
+      <li>The shy-line offset Ls comes from Figure 49-4E (4.0 ft at 30 mph to 9.0 ft at 70 mph; 35 and 65 mph interpolated). The shy line is the distance beyond which a roadside object is not perceived as a threat.</li>
+      <li>A roadside barrier should normally be parallel to the roadway; a flared installation may be appropriate where the end is buried in the backslope (49-4.02(01)). Flaring reduces the length of need; see the Length of Need page for Equations 49-4.2 and 49-4.3.</li>
+      <li>Figure 49-4F stops at 65 mph; the 65 mph rates are used (and flagged) for 70 mph.</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/roadside.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI, C = IDMCalc;
+  U.page({ section: "roadside", title: "Barrier Flare Rates", chapters: ["49"] });
+  U.speedOptions("V", [30, 35, 40, 45, 50, 55, 60, 65, 70], 55);
+
+  function compute() {
+    var V = U.num("V"), bt = U.str("bt"), o1 = U.num("o1"), o2 = U.num("o2"), Lp = U.num("Lp");
+    var fr = C.flareRate(Math.min(V, 65));
+    var Ls = C.lonDesign(V, 1000).Ls;
+    var outRate = bt === "cb" ? fr.concrete : fr.guardrail;
+    var lo = Math.min(o1, o2), hi = Math.max(o1, o2);
+    var inPart = Math.max(0, Math.min(hi, Ls) - lo), outPart = Math.max(0, hi - Math.max(lo, Ls));
+    var Lmin = inPart * fr.inside + outPart * outRate;
+    var out = U.stats([["Inside shy line", fr.inside + ":1", ""], ["Outside shy line", outRate + ":1", ""], ["Min. flare length", U.fmt(Lmin, 1), "ft"]]);
+    var rows = [
+      ["Shy-line offset, Ls", U.fmt(Ls, 2) + " ft", "Figure 49-4E"],
+      ["Max. flare inside shy line (all barriers)", fr.inside + ":1", "Figure 49-4F"],
+      ["Max. flare outside shy line, " + (bt === "cb" ? "concrete barrier" : "guardrail"), outRate + ":1", "Figure 49-4F"],
+      ["Lateral change inside shy line", U.fmt(inPart, 2) + " ft × " + fr.inside, U.fmt(inPart * fr.inside, 1) + " ft"],
+      ["Lateral change outside shy line", U.fmt(outPart, 2) + " ft × " + outRate, U.fmt(outPart * outRate, 1) + " ft"],
+      ["Minimum flare length", U.fmt(Lmin, 1) + " ft", "", "gov"]
+    ];
+    out += U.kv(rows);
+    if (V > 65) out += U.msg("warn", "Figure 49-4F tabulates 30 to 65 mph; 65 mph rates are used for " + V + " mph.");
+    if (isFinite(Lp)) {
+      var ok = Lp >= Lmin - 1e-9;
+      var avg = (hi - lo) > 0 ? Lp / (hi - lo) : Infinity;
+      out += U.msg(ok ? "pass" : "fail", "Proposed " + U.fmt(Lp, 1) + " ft flare (average " + (isFinite(avg) ? U.fmt(avg, 1) + ":1" : "parallel") + ") " + (ok ? "is no sharper than" : "is sharper than") + " the Figure 49-4F limits. " + U.badge(ok));
+    }
+    U.$("results").innerHTML = out;
+    draw(lo, hi, Ls, Lmin, inPart, fr.inside, outRate);
+  }
+
+  function draw(lo, hi, Ls, L, inPart, rIn, rOut) {
+    var W = 900, H = 240, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var x0 = 80, x1 = W - 80, sx = (x1 - x0 - 120) / Math.max(L, 1), sy = (H - 100) / Math.max(hi + 2, 1);
+    var Y = function (o) { return 50 + o * sy; };
+    U.el(svg, "rect", { x: 0, y: 20, width: W, height: 30, fill: "var(--road)" });
+    U.line(svg, 0, 50, W, 50, "var(--ink)", 2);
+    U.text(svg, 10, 44, "← Traffic", { size: 12, fill: "var(--surface)" });
+    U.line(svg, 0, Y(Ls), W, Y(Ls), "var(--warn)", 1, "6 4");
+    U.text(svg, W - 10, Y(Ls) - 4, "Shy line " + U.fmt(Ls, 1) + " ft", { anchor: "end", size: 11, fill: "var(--warn)" });
+    // barrier: parallel at lo from x0 to x0+60, then flare to hi over L
+    var xs = x0 + 60;
+    U.line(svg, x0 - 40, Y(lo), xs, Y(lo), "var(--accent)", 4);
+    var xm = xs + inPart * rIn * sx, ym = Y(Math.min(hi, Math.max(lo, Ls)));
+    U.line(svg, xs, Y(lo), xm, ym, "var(--accent)", 4);
+    U.line(svg, xm, ym, xs + L * sx, Y(hi), "var(--accent)", 4);
+    U.el(svg, "circle", { cx: xs + L * sx, cy: Y(hi), r: 5, fill: "var(--accent)" });
+    U.text(svg, xs + L * sx + 8, Y(hi) + 4, "End terminal", { size: 11 });
+    U.dim(svg, xs, H - 22, xs + L * sx, H - 22, "Flare length = " + U.fmt(L, 1) + " ft", { dy: -6, size: 13 });
+    U.text(svg, x0 - 40, Y(lo) - 6, "offset " + lo, { size: 11 });
+    U.text(svg, xs + L * sx - 10, Y(hi) - 8, "offset " + hi, { anchor: "end", size: 11 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Side-Slope Check</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Side-Slope Check</h1>
+  <p class="lede">Checks proposed fill slopes, cut foreslopes and backslopes against the IDM typical side-slope criteria for new construction (Figures 45-3A to 45-3D), the 2:1 slope policy (Section 45-3.03), and the Chapter 49 recoverable-slope rules used for clear-zone work.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Facility</legend>
+        <div class="field"><label for="scope">Project scope</label><select id="scope"><option value="4r" selected>New construction / 4R</option><option value="3r">3R / partial 3R</option></select></div>
+        <div class="field"><label for="area">Area</label><select id="area"><option value="rural" selected>Rural</option><option value="urban">Urban</option></select></div>
+        <div class="field"><label for="cls">Functional class</label><select id="cls"><option value="fwy">Freeway</option><option value="art" selected>Arterial</option><option value="col">Collector</option><option value="loc">Local road / street</option></select></div>
+        <div class="field"><label for="V">Design speed (mph)</label><input id="V" type="number" step="5" value="55"></div>
+        <div class="field"><label for="curb">Curbed?</label><select id="curb"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+        <div class="field"><label for="sidewalk">Sidewalk present or anticipated?<small>Curbed sections</small></label><select id="sidewalk"><option value="no">No</option><option value="yes" selected>Yes</option></select></div>
+      </fieldset>
+      <fieldset><legend>Proposed section</legend>
+        <div class="field"><label for="sec">Section</label><select id="sec"><option value="fill" selected>Fill</option><option value="cut">Cut (ditch)</option></select></div>
+        <div class="field"><label for="H">Fill height or cut depth, H (ft)</label><input id="H" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="sh">Shoulder width (ft)</label><input id="sh" type="number" step="0.5" value="10"></div>
+        <div class="field"><label for="cz">Clear-zone width from edge of travel lane (ft)<small>From the Clear-Zone page</small></label><input id="cz" type="number" step="1" value="30"></div>
+        <div class="field"><label for="s1">Fill: slope within clear zone / Cut: foreslope (H:1)</label><input id="s1" type="number" step="0.5" value="6"></div>
+        <div class="field"><label for="s2">Fill: slope beyond clear zone to toe / Cut: backslope (H:1)</label><input id="s2" type="number" step="0.5" value="3"></div>
+        <div class="field"><label for="rock">Rock cut?</label><select id="rock"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Side slope cross section"></svg>
+    <div class="cap">Half cross section from the edge of travel lane, drawn to scale (vertical and horizontal equal).</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>Fill slopes (45-3.01, Figures 45-3A and 45-3B)</h3>
+    <ul>
+      <li>New construction: 6:1 to the edge of the clear zone; if the slope has not reached natural ground there, 3:1 or flatter to the toe (freeways, arterials, collectors).</li>
+      <li>Rural local roads: 4:1 desirable, 3:1 maximum for fills up to 30 ft; 3:1 maximum over 30 ft. Urban local streets: 3:1 maximum.</li>
+      <li>Curbed facilities (Figure 45-3B): the fill starts X beyond the curb on a 12:1 slope; X = 5 ft rural (11 ft with sidewalk), 11 ft urban (5 ft without sidewalk). Urban arterials, collectors and local streets: 3:1 maximum.</li>
+      <li>Slopes in Figures 45-3A and 45-3B are for new construction; see Chapter 49 for reconstruction.</li>
+    </ul>
+    <h3>Cut slopes (45-3.02, Figures 45-3C and 45-3D)</h3>
+    <ul>
+      <li>Freeway: 6:1 foreslope; backslope 4:1 for 20 ft, then 4:1 (H ≤ 10 ft) or 3:1 (H &gt; 10 ft).</li>
+      <li>Arterial or rural collector: 6:1 foreslope; backslope 4:1 for 20 ft, then 3:1 maximum to top.</li>
+      <li>Urban collector: foreslope 6:1 desirable, 4:1 maximum; backslope 4:1 for 4 ft, then 3:1 maximum.</li>
+      <li>Rural local road: 4:1 maximum foreslope and backslope for V ≥ 50 mph; 3:1 for V ≤ 45 mph. Urban local street: 3:1 maximum.</li>
+      <li>Curbed cut (Figure 45-3D): 11-ft shelf (5 ft without sidewalk); backslope 4:1 maximum rural, 4:1 urban arterial/collector, 3:1 urban local.</li>
+      <li>Ditch grade: 1% or steeper needs sod; 3% or steeper needs paved or riprap lining; flattest unpaved ditch grade 0.5% (0.3% restricted).</li>
+    </ul>
+    <h3>2:1 slopes (45-3.03)</h3>
+    <p>Avoid slopes of 2:1 or steeper on INDOT projects unless absolutely necessary. On a 4R project a 2:1 sideslope requires Level Two design-exception documentation at the grade-review stage. On 3R projects consider 3:1, then 2.5:1 before 2:1. In rock cuts use 3:1 rather than 2:1 unless good stability or sound rock is verified. Chapter 55 3R figures list their own side-slope values; see the Lane &amp; Shoulder Widths page.</p>
+    <h3>Recoverability (Chapter 49)</h3>
+    <p>Fill slopes 4:1 or flatter can be slope-averaged within the clear zone. Slopes steeper than 4:1 are non-recoverable; if the clear zone extends onto them, provide a clear runout area at the toe equal to the clear-zone width remaining on the slope or 12 ft, whichever is greater (49-2.03(01)). A 3:1 foreslope is not tabulated in Figure 49-2A; fixed objects should not be present on it.</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/cross-section.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI;
+  U.page({ section: "cross-section", title: "Side-Slope Check", chapters: ["45", "49"] });
+
+  function judge(run, maxRun, desRun) {
+    // run = H in H:1 ; flatter = larger run
+    if (!isFinite(run)) return { cls: "warn", badge: '<span class="badge warn">n/a</span>' };
+    if (run + 1e-9 < maxRun) return { cls: "fail", badge: '<span class="badge fail">Steeper than ' + maxRun + ":1</span>" };
+    if (desRun && run + 1e-9 < desRun) return { cls: "warn", badge: '<span class="badge warn">Meets max., below desirable ' + desRun + ":1</span>" };
+    return { cls: "pass", badge: '<span class="badge pass">OK</span>' };
+  }
+
+  function compute() {
+    var scope = U.str("scope"), area = U.str("area"), cls = U.str("cls"), V = U.num("V"), curb = U.str("curb") === "yes", sw = U.str("sidewalk") === "yes";
+    var sec = U.str("sec"), H = U.num("H"), sh = U.num("sh") || 0, cz = U.num("cz"), s1 = U.num("s1"), s2 = U.num("s2"), rock = U.str("rock") === "yes";
+    var rows = [], msgs = [], crit = "", c1 = null, c2 = null, fig = "";
+    if (sec === "fill") {
+      if (curb) {
+        fig = "45-3B";
+        if (cls === "fwy") crit = "Not applicable to freeways (N/A in Figure 45-3B).";
+        else if (area === "rural" && (cls === "art" || cls === "col")) { crit = "6:1 to clear-zone edge; 3:1 or flatter to toe"; c1 = [6]; c2 = [3]; }
+        else if (area === "rural" && cls === "loc") { crit = H > 30 ? "3:1 maximum (fill > 30 ft)" : "Desirable 4:1, maximum 3:1"; c1 = H > 30 ? [3] : [3, 4]; c2 = c1; }
+        else { crit = "3:1 maximum"; c1 = [3]; c2 = [3]; }
+        var X = area === "rural" ? (sw ? 11 : 5) : (sw ? 11 : 5);
+        msgs.push(U.msg("info", "Figure 45-3B: begin the fill slope " + X + " ft behind the curb on a 12:1 slope (" + (area === "rural" ? "5 ft, or 11 ft with sidewalk" : "11 ft, or 5 ft without sidewalk") + ")."));
+      } else {
+        fig = "45-3A";
+        if (cls === "loc" && area === "rural") { crit = H > 30 ? "3:1 maximum (fill > 30 ft)" : "Desirable 4:1, maximum 3:1 (fill 0-30 ft)"; c1 = H > 30 ? [3] : [3, 4]; c2 = c1; }
+        else if (cls === "loc") { crit = "3:1 maximum"; c1 = [3]; c2 = [3]; }
+        else { crit = "6:1 to clear-zone edge; 3:1 maximum to toe (see Section 49-2.03)"; c1 = [6]; c2 = [3]; }
+      }
+      rows.push(["IDM criterion, Figure " + fig, crit, scope === "4r" ? "New construction" : "Shown for reference (3R: see below)"]);
+      if (c1) {
+        var j1 = judge(s1, c1[0], c1[1]), j2 = judge(s2, c2[0], c2[1]);
+        rows.push(["Slope within clear zone: " + s1 + ":1", j1.badge, ""]);
+        rows.push(["Slope beyond clear zone to toe: " + s2 + ":1", j2.badge, ""]);
+      }
+    } else {
+      if (curb) {
+        fig = "45-3D";
+        var shelf = sw ? 11 : 5;
+        if (cls === "fwy") crit = "Not applicable to freeways.";
+        else if (area === "rural") { crit = "Shelf " + shelf + " ft; backslope 4:1 maximum"; c2 = [4]; }
+        else if (cls === "loc") { crit = "Shelf " + shelf + " ft; backslope 3:1"; c2 = [3]; }
+        else { crit = "Shelf " + shelf + " ft; backslope 4:1"; c2 = [4]; }
+        rows.push(["IDM criterion, Figure 45-3D", crit, ""]);
+        if (c2) rows.push(["Backslope " + s2 + ":1", judge(s2, c2[0]).badge, ""]);
+      } else {
+        fig = "45-3C";
+        var fs, bs, txt;
+        if (cls === "fwy") { fs = [6]; bs = [H > 10 ? 3 : 4]; txt = "Foreslope 6:1; backslope 4:1 for 20 ft, then " + (H > 10 ? "3:1 (H > 10 ft)" : "4:1 (H ≤ 10 ft)"); }
+        else if (cls === "art" || (cls === "col" && area === "rural")) { fs = [6]; bs = [3]; txt = "Foreslope 6:1; backslope 4:1 for 20 ft, then 3:1 maximum to top"; }
+        else if (cls === "col") { fs = [4, 6]; bs = [3]; txt = "Foreslope desirable 6:1, maximum 4:1; backslope 4:1 for 4 ft, then 3:1 maximum"; }
+        else if (area === "rural") { fs = [V >= 50 ? 4 : 3]; bs = fs; txt = "Foreslope and backslope " + (V >= 50 ? "4:1 maximum (V ≥ 50 mph)" : "3:1 maximum (V ≤ 45 mph)") + "; ditch desirable 4 ft, minimum V"; }
+        else { fs = [3]; bs = [3]; txt = "Foreslope and backslope 3:1 maximum; ditch desirable 4 ft, minimum V"; }
+        rows.push(["IDM criterion, Figure 45-3C", txt, "Backslope values are maximum for earth cut"]);
+        rows.push(["Foreslope " + s1 + ":1", judge(s1, fs[0], fs[1]).badge, ""]);
+        rows.push(["Backslope " + s2 + ":1 (beyond the 4:1 segment where applicable)", judge(s2, bs[0]).badge, ""]);
+      }
+    }
+    var out = U.kv(rows.map(function (r) { return [r[0] + (r[2] ? '<div class="src">' + r[2] + "</div>" : ""), r[1]]; }));
+    msgs.forEach(function (m) { out += m; });
+    var steep = Math.min(isFinite(s1) ? s1 : 99, isFinite(s2) ? s2 : 99);
+    if (steep <= 2 + 1e-9) {
+      out += U.msg(scope === "4r" ? "fail" : "warn", scope === "4r" ? "A 2:1 (or steeper) slope on a 4R project requires Level Two design-exception documentation at the grade-review stage, including the economic or environmental reasons (45-3.03(01))." : "3R: consider 3:1, then 2.5:1, before using 2:1 (45-3.03(02)). Protect 2:1 slopes with erosion-control blankets and capping soil.");
+    } else if (steep < 3) out += U.msg("warn", "Slope steeper than 3:1: see Section 45-3.03; consider guardrail warrants in Section 49-4.04 (Figure 49-3B) for embankments.");
+    if (rock) out += U.msg("info", "Rock cut: use 3:1 rather than 2:1 unless good slope stability or sound rock has been verified; benching may be required (45-3.03(01), 45-3.02(02)).");
+    if (scope === "3r") out += U.msg("info", "3R projects: Chapter 55 figures give the 3R side-slope criteria (check the Lane & Shoulder Widths page for the exact cell text) and Section 45-3.03(02) applies.");
+    // recoverability
+    if (sec === "fill") {
+      var rec = s1 >= 4 ? "Recoverable (4:1 or flatter): may be slope-averaged within the clear zone." : "Non-recoverable (steeper than 4:1): not included in slope averaging.";
+      out += U.msg(s1 >= 4 ? "pass" : "warn", "Slope within clear zone: " + rec);
+      if (isFinite(cz) && isFinite(H)) {
+        var reach = sh + s1 * H; // horizontal extent of fill at slope s1 (if single slope to toe)
+        if (s1 < 4 && cz > sh) {
+          var onSlope = Math.min(cz - sh, s1 * H);
+          var run = Math.max(onSlope, IDM.road ? 12 : 12);
+          out += U.msg("info", "Clear zone extends " + U.fmt(onSlope, 1) + " ft onto the non-recoverable slope. Provide a clear runout area at the toe of at least " + U.fmt(Math.max(onSlope, 12), 1) + " ft (the greater of that width or 12 ft, 49-2.03(01) item 2.c).");
+        }
+      }
+    }
+    U.$("results").innerHTML = out;
+    draw(sec, H, sh, cz, s1, s2, cls, curb);
+  }
+
+  function draw(sec, H, sh, cz, s1, s2, cls, curb) {
+    var W = 900, Hs = 300, svg = U.svg("dia", W, Hs);
+    U.defs(svg);
+    H = isFinite(H) && H > 0 ? H : 10; s1 = s1 > 0 ? s1 : 4; s2 = s2 > 0 ? s2 : 3;
+    var pts = [[-12, 0], [0, 0], [sh, -sh * 0.04]];
+    var y = -sh * 0.04, x = sh;
+    if (sec === "fill") {
+      var czEdge = isFinite(cz) ? Math.max(cz, sh) : sh + s1 * H / 2;
+      var run1 = Math.min(czEdge - sh, s1 * H);
+      x += run1; y -= run1 / s1; pts.push([x, y]);
+      var remaining = H + y + sh * 0.04; // height left to toe
+      if (remaining > 0.01) { x += remaining * s2; y = -H - sh * 0.04; pts.push([x, y]); }
+      pts.push([x + 25, y]);
+    } else {
+      var d = H;
+      x += Math.min(s1 * 3, 30); y -= Math.min(s1 * 3, 30) / s1; pts.push([x, y]);
+      x += 4; pts.push([x, y]);
+      x += d * s2; y += d; pts.push([x, y]); pts.push([x + 20, y]);
+    }
+    var xs = pts.map(function (p) { return p[0]; }), ys = pts.map(function (p) { return p[1]; });
+    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs), minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    var sc = Math.min((W - 80) / (maxX - minX), (Hs - 90) / Math.max(maxY - minY, 1));
+    var X = function (v) { return 40 + (v - minX) * sc; }, Y = function (v) { return 50 + (maxY - v) * sc; };
+    var ground = pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" ");
+    U.el(svg, "polygon", { points: ground + " " + X(maxX) + "," + (Hs - 10) + " " + X(minX) + "," + (Hs - 10), fill: "var(--earth)", opacity: 0.35 });
+    U.el(svg, "polyline", { points: ground, fill: "none", stroke: "var(--grass)", "stroke-width": 3 });
+    U.line(svg, X(-12), Y(0), X(0), Y(0), "var(--road)", 6);
+    U.line(svg, X(0), Y(0), X(sh), Y(-sh * 0.04), "var(--road-2)", 6);
+    U.line(svg, X(0), 30, X(0), Hs - 20, "var(--ink-3)", 1, "4 4");
+    U.text(svg, X(0) + 4, 26, "Edge of travel lane", { size: 11 });
+    if (sec === "fill" && isFinite(cz)) {
+      U.line(svg, X(cz), 30, X(cz), Hs - 20, "var(--pass)", 1.5, "6 4");
+      U.text(svg, X(cz) + 4, 40, "Clear zone " + cz + " ft", { size: 12, fill: "var(--pass)" });
+    }
+    for (var i = 2; i < pts.length - 1; i++) {
+      var a = pts[i], b = pts[i + 1];
+      var run = Math.abs(b[0] - a[0]), rise = Math.abs(b[1] - a[1]);
+      if (rise < 0.01) continue;
+      U.text(svg, (X(a[0]) + X(b[0])) / 2 + 10, (Y(a[1]) + Y(b[1])) / 2 - 6, U.fmt(run / rise, 1) + ":1", { size: 13, cls: "t-strong" });
+    }
+    U.text(svg, X(sh / 2), Y(0) - 10, "Shoulder", { anchor: "middle", size: 11 });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

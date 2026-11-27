@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cross Slopes</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Cross Slopes (Tangent Sections)</h1>
+  <p class="lede">Gives the IDM travel-lane, auxiliary-lane and shoulder cross slopes for a tangent section on a State highway, based on the number of lanes, crown location, shoulder width and underdrains (Sections 45-1.01(02), 45-1.02(05), 45-1.03; Figures 45-1A(1) and 45-1A(2)).</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Roadway</legend>
+        <div class="field"><label for="type">Section type</label>
+          <select id="type">
+            <option value="u2">2-lane highway (crowned at centerline)</option>
+            <option value="dnew" selected>Divided, new construction / reconstruction</option>
+            <option value="dadd">Divided, lanes added to existing (crown kept)</option>
+            <option value="exist">Existing, all lanes sloped one direction (overlay)</option>
+          </select></div>
+        <div class="field"><label for="n">Through lanes per direction</label><select id="n"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+        <div class="field"><label for="w">Lane width (ft)</label><input id="w" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="surf">Route / surface</label>
+          <select id="surf"><option value="state" selected>State highway</option><option value="nsp">Non-State, paved</option><option value="nsa">Non-State, aggregate surface</option></select></div>
+      </fieldset>
+      <fieldset><legend>Outside edge</legend>
+        <div class="field"><label for="edge">Edge treatment</label>
+          <select id="edge"><option value="paved" selected>Paved shoulder</option><option value="curb">Curb (curb offset)</option><option value="agg">Aggregate shoulder</option><option value="earth">Earth shoulder</option></select></div>
+        <div class="field"><label for="sw">Paved shoulder / curb offset width (ft)</label><input id="sw" type="number" step="0.5" value="10"></div>
+        <div class="field"><label for="ud">Underdrains at edge of travel lane?</label><select id="ud"><option value="yes" selected>Yes, Figure 45-1A(1)</option><option value="no">No, Figure 45-1A(2)</option></select></div>
+        <div class="field"><label for="aux">Auxiliary lane on the outside?</label><select id="aux"><option value="no" selected>No</option><option value="yes">Yes</option></select></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Results</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Diagram</h2>
+    <svg id="dia" aria-label="Cross slope diagram"></svg>
+    <div class="cap">One direction of travel, from the crown or median edge outward. Arrows point downslope. Slopes exaggerated.</div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <h3>Travel lanes (45-1.01(02))</h3>
+    <ul>
+      <li>2-lane highway: crowned at the centerline, 2% away from the center.</li>
+      <li>Divided, two lanes each direction: each roadway crowned at its centerline, 2%.</li>
+      <li>Three lanes, new or reconstruction: crown on the lane line between the center lane and the median-side lane; the right two lanes slope to the outside; all at 2%.</li>
+      <li>Three lanes added to an existing facility: keep the existing crown; added lanes match the adjacent lane. Where three lanes slope the same direction, the third lane is 3%.</li>
+      <li>Four lanes: crowned at the one-way roadway centerline (two lanes each side) at 2%. Where three or more lanes slope the same direction, the third and fourth lanes are 3%.</li>
+      <li>Existing roadway with two lanes sloped one direction: thicken the overlay 3 in. at the inside edge for a uniform 2%; with three lanes, use 3% on the outside lane; a lane added in the median slopes 2% toward the median.</li>
+      <li>Bridges: 2% from the crown to the face of rail or curb; an existing bridge to remain may keep 1.5%. Non-State paved: 2%; non-State aggregate: 6%.</li>
+    </ul>
+    <h3>Shoulders (45-1.02(05), Figures 45-1A(1), 45-1A(2))</h3>
+    <ul>
+      <li>Paved shoulder 4 ft or narrower: same slope as the adjacent travel lane (2%).</li>
+      <li>Paved shoulder over 4 ft with underdrains: 2% for the 2 ft next to the travel lane, then 4%. Without underdrains: 4%.</li>
+      <li>Curb offset: paved, same slope as the adjacent lane (typically 2%). Aggregate shoulders 4 to 6%; earth shoulders 6 to 8%.</li>
+      <li>Where the travel-lane slope differs from 2%, a 4-ft-or-narrower shoulder matches the lane slope.</li>
+    </ul>
+    <h3>Auxiliary lanes (45-1.03)</h3>
+    <p>Cross slope 1% greater than the adjacent through lane. For superelevated sections see the Superelevation page and Section 305-4.06 (shoulders) and 305-4.07 (auxiliary lanes).</p>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/cross-section.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI;
+  U.page({ section: "cross-section", title: "Cross Slopes", chapters: ["45"] });
+
+  function compute() {
+    var type = U.str("type"), n = Number(U.str("n")), w = U.num("w"), surf = U.str("surf"), edge = U.str("edge"), sw = U.num("sw") || 0, ud = U.str("ud") === "yes", aux = U.str("aux") === "yes";
+    var base = surf === "nsa" ? 6 : 2;
+    // lanes listed from median/crown side outward; dir +1 = slopes outward (away from median), -1 = toward median
+    var lanes = [], notes = [];
+    if (type === "u2") {
+      if (n !== 1) notes.push("A 2-lane highway has one lane per direction; showing one lane.");
+      lanes = [{ s: base, dir: 1 }];
+    } else if (type === "dnew") {
+      if (n === 1) lanes = [{ s: base, dir: 1 }];
+      else if (n === 2) { lanes = [{ s: base, dir: -1 }, { s: base, dir: 1 }]; notes.push("Crowned at the one-way roadway centerline (between lanes 1 and 2)."); }
+      else if (n === 3) { lanes = [{ s: base, dir: -1 }, { s: base, dir: 1 }, { s: base, dir: 1 }]; notes.push("Crown on the line between the center lane and the median-side lane; right two lanes slope outward."); }
+      else { lanes = [{ s: base, dir: -1 }, { s: base, dir: -1 }, { s: base, dir: 1 }, { s: base, dir: 1 }]; notes.push("Crowned at the one-way roadway centerline (two lanes each side)."); }
+    } else if (type === "dadd") {
+      // existing crown kept; assume existing 2-lane roadway sloped outward from median, lane(s) added outside
+      for (var i = 0; i < n; i++) lanes.push({ s: i >= 2 ? 3 : base, dir: 1 });
+      notes.push("Existing crown kept; added lanes match the adjacent lane direction. Where three or more lanes slope the same direction, the third and fourth lanes are 3%.");
+      notes.push("A lane added in the median instead slopes 2% toward the median (45-1.01(02) item 2.d).");
+    } else {
+      for (var j = 0; j < n; j++) lanes.push({ s: (n >= 3 && j === n - 1) ? 3 : base, dir: 1 });
+      if (n === 2) notes.push("Increase the overlay depth by 3 in. at the inside edge to achieve a uniform 2% across both lanes.");
+      if (n >= 3) notes.push("For three lanes sloped one direction, use 3% for the outside lane.");
+    }
+    var outsideLane = lanes[lanes.length - 1];
+    var sh = shoulder(edge, sw, ud, outsideLane.s);
+    var auxS = aux ? outsideLane.s + 1 : null;
+    var rows = lanes.map(function (l, i) {
+      return ["Lane " + (i + 1) + (i === 0 ? " (median / crown side)" : i === lanes.length - 1 ? " (outside)" : ""), l.s.toFixed(1) + "% " + (l.dir > 0 ? "away from median" : "toward median"), "45-1.01(02)"];
+    });
+    if (aux) rows.push(["Auxiliary lane", auxS.toFixed(1) + "% away from median", "45-1.03: 1% greater than adjacent through lane"]);
+    rows.push(["Shoulder / edge", sh.text, sh.src, "gov"]);
+    var out = U.kv(rows);
+    notes.forEach(function (t) { out += U.msg("info", t); });
+    if (surf === "nsa") out += U.msg("info", "Non-State facility with aggregate surface: 6% cross slope (45-1.01(02)).");
+    if (aux && edge === "paved" && sw <= 4) out += U.msg("info", "A narrow shoulder next to the auxiliary lane matches the auxiliary-lane slope.");
+    U.$("results").innerHTML = out;
+    draw(lanes, w, aux ? { s: auxS } : null, sh, sw, edge);
+  }
+
+  function shoulder(edge, sw, ud, laneS) {
+    if (edge === "curb") return { text: "Curb offset: " + laneS.toFixed(1) + "% (same as adjacent lane)", src: "45-1.02(05) item 2", parts: [[sw, laneS]] };
+    if (edge === "agg") return { text: "Aggregate: 4% to 6%", src: "45-1.02(05) item 3", parts: [[sw, 5]] };
+    if (edge === "earth") return { text: "Earth: 6% to 8%", src: "45-1.02(05) item 4", parts: [[sw, 7]] };
+    if (sw <= 4) return { text: laneS.toFixed(1) + "% (paved ≤ 4 ft: match travel lane)", src: ud ? "Figure 45-1A(1)" : "Figure 45-1A(2)", parts: [[sw, laneS]] };
+    if (ud) return { text: laneS.toFixed(1) + "% for first 2 ft, then 4%", src: "Figure 45-1A(1), with underdrains", parts: [[2, laneS], [sw - 2, 4]] };
+    return { text: "4%", src: "Figure 45-1A(2), without underdrains", parts: [[sw, 4]] };
+  }
+
+  function draw(lanes, w, aux, sh, sw, edge) {
+    var W = 900, H = 260, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var segs = lanes.map(function (l) { return { w: w, s: l.s, dir: l.dir, kind: "lane" }; });
+    if (aux) segs.push({ w: w, s: aux.s, dir: 1, kind: "aux" });
+    sh.parts.forEach(function (p) { if (p[0] > 0) segs.push({ w: p[0], s: p[1], dir: 1, kind: edge === "curb" ? "curb" : "shoulder" }); });
+    var total = segs.reduce(function (a, s) { return a + s.w; }, 0);
+    var x0 = 50, sc = (W - 100) / total, ex = 6; // vertical exaggeration (px per ft per %)
+    // compute elevations
+    var y = 0, pts = [[0, 0]];
+    segs.forEach(function (s) { y += -s.dir * s.w * s.s / 100; pts.push([pts[pts.length - 1][0] + s.w, y]); });
+    var ys = pts.map(function (p) { return p[1]; }), ymax = Math.max.apply(null, ys), ymin = Math.min.apply(null, ys);
+    var vs = 90 / Math.max(ymax - ymin, 0.5);
+    var X = function (f) { return x0 + f * sc; }, Y = function (e) { return 90 + (ymax - e) * vs; };
+    U.line(svg, X(0), 40, X(0), H - 40, "var(--ink-3)", 1, "8 4 2 4");
+    U.text(svg, X(0) + 4, 34, "Median edge / crown", { size: 12 });
+    segs.forEach(function (s, i) {
+      var a = pts[i], b = pts[i + 1];
+      var fill = s.kind === "lane" ? "var(--road)" : s.kind === "aux" ? "var(--accent)" : "var(--road-2)";
+      U.el(svg, "polygon", { points: [X(a[0]), Y(a[1]), X(b[0]), Y(b[1]), X(b[0]), Y(b[1]) + 14, X(a[0]), Y(a[1]) + 14].join(" "), fill: fill, stroke: "var(--surface)", "stroke-width": 1 });
+      var mx = (X(a[0]) + X(b[0])) / 2, my = (Y(a[1]) + Y(b[1])) / 2;
+      U.text(svg, mx, my - 14, s.s.toFixed(1) + "%", { anchor: "middle", size: 12, cls: "t-strong" });
+      var dx = 18 * (s.dir > 0 ? 1 : -1);
+      var l = U.line(svg, mx - dx, my + 36, mx + dx, my + 36 + (s.dir > 0 ? 3 : 3), "var(--dim)", 1.5);
+      l.setAttribute("marker-end", "url(#arr-dim)");
+      U.text(svg, mx, Y(Math.min(a[1], b[1])) + 70, s.kind === "lane" ? "Lane" : s.kind === "aux" ? "Aux. lane" : s.kind === "curb" ? "Curb offset" : "Shoulder", { anchor: "middle", size: 11 });
+    });
+    if (edge === "curb") { var e = pts[pts.length - 1]; U.el(svg, "rect", { x: X(e[0]), y: Y(e[1]) - 6, width: 8, height: 22, fill: "var(--ink-3)" }); }
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>

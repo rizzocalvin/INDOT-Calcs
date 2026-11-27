@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INDOT IDM Roadway Calculators</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-root=".">
+<main class="wrap">
+  <div class="crumbs">Home</div>
+  <h1>INDOT IDM Roadway Calculators</h1>
+  <p class="lede">Roadway design calculators built on the INDOT <b>Indiana Design Manual (IDM)</b>: the 2013 IDM as revised by the Design Memoranda listed on each chapter. Every design value comes from the IDM chapter PDFs and is kept in separate data files tagged with the IDM section, figure and revision, so the values can be updated when the IDM changes.</p>
+  <div class="verify"><b>Verify before use.</b> These tools are design aids. Check every result against the current IDM and apply engineering judgment. Where the IDM itself has inconsistencies, the affected page notes them.</div>
+  <div class="tiles" id="sections"></div>
+  <section class="card">
+    <h2>IDM chapter versions used</h2>
+    <p>Each calculator page lists the chapters it uses and their latest revision. The data were transcribed from these chapter versions:</p>
+    <div class="table-scroll"><table class="kv" id="chapters"></table></div>
+    <p style="margin-top:10px">See <code>README.md</code> for how to update the data tables when INDOT revises a chapter.</p>
+  </section>
+</main>
+<script src="data/sources.js"></script>
+<script src="js/common.js"></script>
+<script>
+  IDMUI.header("");
+  var tiles = IDMUI.SECTIONS.map(function (s) {
+    return '<a class="tile" href="' + s.id + '/index.html"><h2>' + s.name + '</h2><p>' + IDMUI.esc(s.blurb) + '</p>' +
+      '<div class="meta">' + s.pages.length + ' calculators &middot; ' + s.chapters + '</div></a>';
+  }).join("");
+  document.getElementById("sections").innerHTML = tiles;
+  var ch = IDM.sources.chapters;
+  document.getElementById("chapters").innerHTML = '<tr><th>Chapter</th><th>Title</th><th>Latest revision on chapter cover</th><th>PDF date</th></tr>' +
+    Object.keys(ch).sort(function (a, b) { return Number(a) - Number(b); }).map(function (k) {
+      return '<tr><td>Ch. ' + k + '</td><td>' + IDMUI.esc(ch[k].title) + '</td><td>' + IDMUI.esc(ch[k].latest) + '</td><td>' + IDMUI.esc(ch[k].pdfDate) + '</td></tr>';
+    }).join("");
+  IDMUI.footer([]);
+</script>
+</body>
+</html>

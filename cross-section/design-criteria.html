@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lane &amp; Shoulder Widths</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .crit td:first-child { width: 42%; }
+  .crit .grp td { background: var(--surface-2); font-weight: 700; font-size: .82rem; text-transform: uppercase; letter-spacing: .03em; }
+  .crit .ctrl { color: var(--fail); font-weight: 700; }
+  .fn { font-size: .85rem; color: var(--ink-2); }
+  .fn dt { font-weight: 700; float: left; min-width: 2.2em; }
+  .fn dd { margin: 0 0 6px 2.6em; }
+  details summary { cursor: pointer; font-weight: 600; margin: 6px 0; }
+</style>
+</head>
+<body data-root="..">
+<main class="wrap">
+  <h1>Lane &amp; Shoulder Widths (4R / 3R Design Criteria)</h1>
+  <p class="lede">Looks up the IDM geometric design criteria for a functional classification, project scope and traffic or area condition, and checks proposed travel-lane and shoulder widths against them. Every criterion row in the selected IDM figure is listed with its footnotes.</p>
+
+  <div class="calc-grid">
+    <section class="card inputs">
+      <h2>Inputs</h2>
+      <fieldset><legend>Select the IDM figure</legend>
+        <div class="field"><label for="ds">Project scope</label>
+          <select id="ds">
+            <option value="4r">New construction / reconstruction (4R), Ch. 53</option>
+            <option value="3r">Existing non-freeway 3R, Ch. 55</option>
+            <option value="fp">Freeway 3R / partial 4R (Ch. 54) and partial 3R (Ch. 56)</option>
+          </select></div>
+        <div class="field"><label for="fig">Facility / figure</label><select id="fig"></select></div>
+        <div class="field"><label for="col">Design column<small>AADT range, area type or condition</small></label><select id="col"></select></div>
+        <div class="field"><label for="spd">Alignment column<small>Design speed, where the figure has one</small></label><select id="spd"></select></div>
+      </fieldset>
+      <fieldset><legend>Proposed widths (optional)</legend>
+        <div class="field"><label for="pl">Travel lane width (ft)</label><input id="pl" type="number" step="0.5" value="12"></div>
+        <div class="field"><label for="prp">Right shoulder, paved (ft)</label><input id="prp" type="number" step="0.5" value="8"></div>
+        <div class="field"><label for="pru">Right shoulder, usable (ft)</label><input id="pru" type="number" step="0.5" value="10"></div>
+        <div class="field"><label for="plp">Left / median shoulder, paved (ft)<small>Divided facilities</small></label><input id="plp" type="number" step="0.5" placeholder="optional"></div>
+        <div class="field"><label for="nl">Through lanes per direction<small>Used where the criterion depends on it</small></label><select id="nl"><option>2</option><option>3</option></select></div>
+        <div class="field"><label for="pa">Auxiliary lane width (ft)</label><input id="pa" type="number" step="0.5" placeholder="optional"></div>
+        <div class="field"><label for="pco">Curb offset (ft)<small>Curbed urban sections</small></label><input id="pco" type="number" step="0.5" placeholder="optional"></div>
+      </fieldset>
+    </section>
+    <section class="card">
+      <h2>Width check</h2>
+      <div id="results"></div>
+    </section>
+  </div>
+
+  <section class="card diagram">
+    <h2>Typical half section</h2>
+    <svg id="dia" aria-label="Typical half cross section"></svg>
+    <div class="cap">Schematic half section from the centerline (or median edge) outward using your proposed widths, with the figure's criteria noted. Not to scale vertically.</div>
+  </section>
+
+  <section class="card">
+    <h2 id="critTitle">Design criteria</h2>
+    <div id="criteria"></div>
+    <details><summary>Figure footnotes</summary><div id="footnotes"></div></details>
+    <div id="tnotes"></div>
+  </section>
+
+  <section class="card context">
+    <h2>Context and assumptions</h2>
+    <ul>
+      <li><b>4R (Chapter 53):</b> new construction or reconstruction. The Green Book minimum values may be used where lower than the Chapter 53 values, except where they would supersede State or Federal requirements (e.g., 12-ft lanes on the National Truck Network; ADA/PROWAG). Chapter 53 is being rewritten as Chapter 302.</li>
+      <li><b>3R (Chapter 55):</b> resurfacing, restoration and rehabilitation of existing non-freeways. <b>Chapter 54</b> covers freeway 3R and partial 4R; <b>Chapter 56</b> covers partial 3R projects (pavement-width tables and work-type matrices).</li>
+      <li>Rows marked with an asterisk (*) are controlling criteria; values below them need a design exception (Section 40-8.0).</li>
+      <li>Usable shoulder width is the width usable for emergency stopping; the effective usable width is the usable width minus 1 ft, but not less than the paved width (45-1.02(01)). Auxiliary lanes should match the adjacent through lane width, but not be less than 1 ft narrower (45-1.03).</li>
+      <li>Values are shown exactly as printed in the IDM figure, including Des./Min. notation. The width check uses the parsed minimum and desirable values; cells that are not plain widths are reported but not checked.</li>
+      <li>Where shoulders are near guardrail, see Section 49-5.0. Footnotes are critical to correct use of the figures (53-1.0 item 8).</li>
+    </ul>
+  </section>
+</main>
+<script src="../data/sources.js"></script>
+<script src="../data/geometric-4r.js"></script>
+<script src="../data/geometric-3r.js"></script>
+<script src="../data/geometric-3r-freeway-partial.js"></script>
+<script src="../js/calcs.js"></script>
+<script src="../js/common.js"></script>
+<script>
+(function () {
+  var U = IDMUI;
+  U.page({ section: "cross-section", title: "Lane & Shoulder Widths", chapters: ["53", "55", "54", "56", "45"] });
+  var DS = { "4r": IDM.geom4R, "3r": IDM.geom3R, "fp": IDM.geom3RFwyPartial };
+
+  function figs() { var d = DS[U.str("ds")]; return d ? d.figures : []; }
+  function fillFigs() {
+    var f = figs(), sel = U.$("fig"), cur = sel.value;
+    sel.innerHTML = f.map(function (x, i) { return '<option value="' + i + '">' + U.esc(x.id + ": " + (x.facility || x.title)) + "</option>"; }).join("");
+    if (cur && Number(cur) < f.length) sel.value = cur;
+  }
+  function tableOf(o) { return o.table || "main"; }
+  function fillCols() {
+    var f = figs()[Number(U.str("fig")) || 0];
+    if (!f) return;
+    var main = f.columns.filter(function (c) { return tableOf(c) !== "alignment"; });
+    var al = f.columns.filter(function (c) { return tableOf(c) === "alignment"; });
+    var cs = U.$("col"), ss = U.$("spd"), c0 = cs.value, s0 = ss.value;
+    cs.innerHTML = main.map(function (c) { return '<option value="' + c.key + '">' + U.esc(c.label) + "</option>"; }).join("");
+    ss.innerHTML = al.length ? al.map(function (c) { return '<option value="' + c.key + '">' + U.esc(c.label) + "</option>"; }).join("") : '<option value="">(not applicable)</option>';
+    if (main.some(function (c) { return c.key === c0; })) cs.value = c0;
+    if (al.some(function (c) { return c.key === s0; })) ss.value = s0;
+    ss.disabled = !al.length;
+  }
+  U.$("ds").addEventListener("change", function () { U.$("fig").value = "0"; fillFigs(); U.$("fig").value = "0"; fillCols(); });
+  U.$("fig").addEventListener("change", fillCols);
+  // initial fill (respect restored hash after bind restores values, so fill first with defaults)
+  (function preRestore() {
+    var h = {}; location.hash.replace(/^#/, "").split("&").forEach(function (kv) { var p = kv.split("="); if (p[0]) h[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
+    if (h.ds) U.$("ds").value = h.ds;
+    fillFigs(); if (h.fig) U.$("fig").value = h.fig;
+    fillCols();
+  })();
+
+  function cellFor(row, f, colKey, spdKey) {
+    var k = tableOf(row) === "alignment" ? spdKey : colKey;
+    if (!k) return null;
+    var v = row.values ? row.values[k] : undefined;
+    return { key: k, text: v, num: row.numeric ? row.numeric[k] : null };
+  }
+
+  function check(label, prop, num, text, extra) {
+    if (!isFinite(prop)) return null;
+    if (num && num.byLanes) {
+      var nl = U.str("nl");
+      num = num.byLanes[nl] || num.byLanes[Object.keys(num.byLanes).pop()];
+      extra = (extra || "") + " · value for " + nl + " lanes per direction";
+    }
+    if (!num || (num.min === undefined && num.des === undefined)) {
+      return [label, U.fmt(prop, 1) + " ft", "Criterion: " + U.esc(text || "n/a") + " (not a plain width; check manually)", ""];
+    }
+    var min = num.min !== undefined ? num.min : num.des, des = num.des !== undefined ? num.des : num.min;
+    var st;
+    if (prop + 1e-9 < min) st = '<span class="badge fail">Below minimum</span>';
+    else if (prop + 1e-9 < des) st = '<span class="badge warn">Meets min., below desirable</span>';
+    else st = '<span class="badge pass">Meets desirable</span>';
+    return [label, U.fmt(prop, 1) + " ft " + st, "Criterion as printed: " + U.esc(text) + (extra || ""), ""];
+  }
+
+  function compute() {
+    var d = DS[U.str("ds")], f = figs()[Number(U.str("fig")) || 0];
+    if (!d || !f) { U.$("results").innerHTML = U.msg("fail", "Data file for this scope is not loaded."); return; }
+    var colKey = U.str("col"), spdKey = U.str("spd");
+    var colLbl = (f.columns.filter(function (c) { return c.key === colKey; })[0] || {}).label || "";
+    var spdLbl = (f.columns.filter(function (c) { return c.key === spdKey; })[0] || {}).label || "";
+    var byKey = {};
+    f.rows.forEach(function (r) { if (r.key && !byKey[r.key]) byKey[r.key] = r; });
+    // cells that carry two widths (e.g. "Usable: 11 ft Paved: 10 ft") store the second in numericByKey
+    f.rows.forEach(function (r) {
+      if (!r.numericByKey) return;
+      Object.keys(r.numericByKey).forEach(function (k) {
+        if (!byKey[k]) byKey[k] = { element: r.element, key: k, values: r.values, numeric: r.numericByKey[k], section: r.section, controlling: r.controlling, table: r.table };
+      });
+    });
+    var out = "<p class='fn'><b>IDM Figure " + U.esc(f.id) + "</b>, " + U.esc(f.printedTitle || f.title) + (f.revision ? " (" + U.esc(f.revision) + ")" : "") + "<br>Column: " + U.esc(colLbl) + (spdLbl ? "<br>Alignment: " + U.esc(spdLbl) : "") + "</p>";
+    var rows = [];
+    function addCheck(key, label, propId) {
+      var r = byKey[key]; if (!r) return;
+      var c = cellFor(r, f, colKey, spdKey); if (!c) return;
+      var res = check(label, U.num(propId), c.num, c.text, r.controlling ? " · controlling criterion" : "");
+      if (res) rows.push(res);
+    }
+    addCheck("laneWidth", "Travel lane", "pl");
+    addCheck("shoulderRightPaved", "Right shoulder, paved", "prp");
+    addCheck("shoulderRightUsable", "Right shoulder, usable", "pru");
+    addCheck("shoulderLeftPaved", "Left shoulder, paved", "plp");
+    addCheck("auxLaneWidth", "Auxiliary lane", "pa");
+    addCheck("curbOffset", "Curb offset", "pco");
+    if (rows.length) out += U.kv(rows.map(function (r) { return [r[0] + '<div class="src">' + r[2] + "</div>", r[1]]; }));
+    else out += U.msg("info", "This figure has no plain-width lane or shoulder rows to check; see the criteria table below.");
+    var fails = rows.filter(function (r) { return /Below minimum/.test(r[1]); }).length;
+    if (rows.length) out += fails ? U.msg("fail", fails + " proposed width(s) are below the IDM minimum. Controlling criteria below the minimum require a design exception (Section 40-8.0).") : U.msg("pass", "Checked widths meet the IDM minimum for this column.");
+    // lane and shoulder summary
+    var sum = [];
+    ["laneWidth", "shoulderRightPaved", "shoulderRightUsable", "shoulderLeftPaved", "shoulderLeftUsable", "travelLaneCrossSlope", "shoulderCrossSlope", "auxLaneWidth", "curbOffset", "parkingLaneWidth"].forEach(function (k) {
+      var r = byKey[k]; if (!r) return; var c = cellFor(r, f, colKey, spdKey); if (!c || c.text === undefined) return;
+      sum.push([U.esc(r.element) + (r.controlling ? ' <span class="ctrl">*</span>' : ""), U.esc(c.text), r.section ? "Section " + U.esc(r.section) : ""]);
+    });
+    if (sum.length) out += "<h3 style='margin-top:14px'>Width and slope criteria for this column</h3>" + U.kv(sum);
+    U.$("results").innerHTML = out;
+
+    // full criteria table
+    U.$("critTitle").textContent = "All criteria, Figure " + f.id;
+    var html = '<div class="table-scroll"><table class="kv crit"><tr><th>Element</th><th>Value (as printed)</th><th>Notes</th><th>IDM section</th></tr>';
+    var lastG = null;
+    f.rows.forEach(function (r) {
+      var c = cellFor(r, f, colKey, spdKey);
+      if (r.group !== lastG) { html += '<tr class="grp"><td colspan="4">' + U.esc(r.group || "") + (tableOf(r) === "alignment" && spdLbl ? " (" + U.esc(spdLbl) + ")" : "") + "</td></tr>"; lastG = r.group; }
+      var val = c && c.text !== undefined ? U.esc(c.text) : "--";
+      html += "<tr><td>" + (r.controlling ? '<span class="ctrl">* </span>' : "") + U.esc(r.element) + "</td><td>" + val + "</td><td>" + (r.notes && r.notes.length ? "(" + r.notes.map(U.esc).join("), (") + ")" : "") + "</td><td>" + U.esc(r.section || "") + "</td></tr>";
+    });
+    html += "</table></div>";
+    U.$("criteria").innerHTML = html;
+    var fn = f.footnotes || {};
+    U.$("footnotes").innerHTML = '<dl class="fn">' + Object.keys(fn).map(function (k) { return "<dt>(" + U.esc(k) + ")</dt><dd>" + U.esc(fn[k]) + "</dd>"; }).join("") + "</dl>" +
+      (f.figureNotes ? "<p class='fn'>" + [].concat(f.figureNotes).map(U.esc).join("<br>") + "</p>" : "") +
+      (f.legend ? "<p class='fn'>" + U.esc(typeof f.legend === "string" ? f.legend : JSON.stringify(f.legend)) + "</p>" : "");
+    var tn = f.transcriptionNotes;
+    U.$("tnotes").innerHTML = tn && tn.length ? U.msg("warn", "<b>Apparent inconsistencies in this IDM figure (kept as printed):</b><br>" + [].concat(tn).map(U.esc).join("<br>")) : "";
+    draw(byKey, f, colKey, spdKey);
+  }
+
+  function draw(byKey, f, colKey, spdKey) {
+    var W = 900, H = 230, svg = U.svg("dia", W, H);
+    U.defs(svg);
+    var lane = U.num("pl") || 12, shp = U.num("prp") || 0, shu = Math.max(U.num("pru") || 0, shp);
+    var total = lane * 2 + shu + 8;
+    var sc = (W - 120) / total, x0 = 60, y0 = 120;
+    var X = function (ft) { return x0 + ft * sc; };
+    U.line(svg, X(0), 40, X(0), H - 30, "var(--ink-3)", 1, "8 4 2 4");
+    U.text(svg, X(0), 34, "CL / median edge", { anchor: "middle", size: 12 });
+    var slope = 0.02 * sc * 6;
+    // two lanes
+    U.el(svg, "polygon", { points: [X(0), y0, X(lane * 2), y0 + slope * 2, X(lane * 2), y0 + slope * 2 + 14, X(0), y0 + 14].join(" "), fill: "var(--road)" });
+    U.line(svg, X(lane), y0 + slope - 1, X(lane), y0 + slope + 3, "var(--mark)", 3);
+    // shoulder paved and usable
+    var ys = y0 + slope * 2;
+    U.el(svg, "polygon", { points: [X(lane * 2), ys, X(lane * 2 + shp), ys + shp * 0.04 * sc * 6, X(lane * 2 + shp), ys + shp * 0.04 * sc * 6 + 10, X(lane * 2), ys + 12].join(" "), fill: "var(--road-2)" });
+    var yse = ys + shp * 0.04 * sc * 6;
+    if (shu > shp) U.el(svg, "polygon", { points: [X(lane * 2 + shp), yse, X(lane * 2 + shu), yse + (shu - shp) * 0.06 * sc * 6, X(lane * 2 + shu), yse + (shu - shp) * 0.06 * sc * 6 + 8, X(lane * 2 + shp), yse + 8].join(" "), fill: "var(--earth)" });
+    var yu = yse + (shu - shp) * 0.06 * sc * 6;
+    U.line(svg, X(lane * 2 + shu), yu, X(total), yu + 8 * sc / 6 * 2, "var(--grass)", 3);
+    U.dim(svg, X(0), y0 - 30, X(lane), y0 - 30, "Lane " + U.fmt(lane, 1) + " ft");
+    U.dim(svg, X(lane), y0 - 30, X(lane * 2), y0 - 30, "Lane " + U.fmt(lane, 1) + " ft");
+    if (shp > 0) U.dim(svg, X(lane * 2), y0 - 30, X(lane * 2 + shp), y0 - 30, "Paved " + U.fmt(shp, 1));
+    if (shu > 0) U.dim(svg, X(lane * 2), H - 30, X(lane * 2 + shu), H - 30, "Usable " + U.fmt(shu, 1) + " ft", { dy: 18 });
+    var r = byKey.laneWidth, c = r ? cellFor(r, f, colKey, spdKey) : null;
+    if (c && c.text) U.text(svg, X(0) + 8, y0 + 48, "IDM lane width: " + c.text, { size: 12, fill: "var(--accent)" });
+    var r2 = byKey.shoulderRightPaved, c2 = r2 ? cellFor(r2, f, colKey, spdKey) : null;
+    if (c2 && c2.text) U.text(svg, X(0) + 8, y0 + 66, "IDM paved shoulder: " + String(c2.text).slice(0, 70), { size: 12, fill: "var(--accent)" });
+    var r3 = byKey.shoulderRightUsable, c3 = r3 ? cellFor(r3, f, colKey, spdKey) : null;
+    if (c3 && c3.text) U.text(svg, X(0) + 8, y0 + 84, "IDM usable shoulder: " + String(c3.text).slice(0, 70), { size: 12, fill: "var(--accent)" });
+  }
+  U.bind(compute);
+})();
+</script>
+</body>
+</html>
